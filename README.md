@@ -1,10 +1,10 @@
 # Proyecto Final DW — SIGCA
 
-Sistema Integral de Gestión de Citas y Atención.
+Sistema Integral de Gestión de Citas y Atención, una aplicación web académica orientada a la administración de un centro de atención psicológica y estimulación auditiva verbal.
 
-## Avance de hoy
+## Estado actual
 
-- Estructura frontend/backend y configuración de Git.
+- Estructura separada de frontend y backend.
 - API Express, conexión MongoDB y ruta de salud.
 - Vue, Vite, Vue Router y Pinia.
 - Inicio, página de información y página 404.
@@ -53,7 +53,7 @@ npm run dev
 
 Abre http://localhost:5173. Vite redirige `/api` al backend en el puerto 3000. Si cambias el puerto de Express, actualiza también el proxy de `frontend/vite.config.js`.
 
-## Comprobar el avance
+## Verificación de funcionamiento
 
 1. Abre Inicio y navega a Acerca del proyecto.
 2. Usa el botón Comprobar conexión: debe mostrar que API y MongoDB están conectados.
@@ -88,19 +88,6 @@ frontend/
     main.js             # Registro de Vue, Router y Pinia
     style.css
 ```
-
-## Próximo avance del integrante 1
-
-Modelo y API de servicios, formulario administrativo y listado público. Después se implementarán contenido institucional, horarios y contacto. Las rutas administrativas deberán protegerse al integrar autenticación con el integrante 2.
-
-## Responsabilidades previstas
-
-1. Base, portal público, contenido, servicios, horarios y contacto.
-2. Autenticación, usuarios, profesionales, pacientes y responsables.
-3. Solicitudes, citas, calendario y materiales.
-4. Pagos y caja.
-
-Cada integrante agregará sus datos de prueba, solicitudes Postman y documentación. El script de datos ficticios está pendiente hasta contar con los modelos de negocio.
 
 ## Referencias
 
