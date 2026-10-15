@@ -1,0 +1,1 @@
+<template><section class="hero"><p class="eyebrow">404</p><h1>Página no encontrada</h1><p class="intro">La dirección que buscas no existe en este proyecto.</p><RouterLink class="button" to="/">Volver al inicio</RouterLink></section></template>
