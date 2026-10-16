@@ -5,7 +5,7 @@ import { connectDatabase } from './config/database.js';
 
 try {
   await connectDatabase();
-  const server = app.listen(process.env.PORT || 3000, () => console.log('API SIGCA lista'));
+  const server = app.listen(process.env.PORT || 3000, '127.0.0.1', () => console.log('API SIGCA lista'));
   async function shutdown() {
     server.close(async () => { await mongoose.disconnect(); process.exit(0); });
   }

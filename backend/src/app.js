@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import mongoose from 'mongoose';
+import { serviciosRouter, serviciosAdminRouter } from './routes/serviciosRoutes.js';
 
 export const app = express();
 app.disable('x-powered-by');
@@ -15,11 +16,14 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+app.use('/api/servicios', serviciosRouter);
+app.use('/api/admin/servicios', serviciosAdminRouter);
+
 app.use((req, res) => res.status(404).json({ message: 'Ruta no encontrada' }));
 app.use((error, req, res, next) => {
   const invalidJson = error.type === 'entity.parse.failed';
   const tooLarge = error.type === 'entity.too.large';
-  const status = invalidJson ? 400 : tooLarge ? 413 : 500;
+  const status = invalidJson ? 400 : tooLarge ? 413 : error.status || (error.name === 'ValidationError' ? 400 : 500);
   if (status === 500) console.error(error.message);
-  res.status(status).json({ message: invalidJson ? 'JSON inválido' : tooLarge ? 'Solicitud demasiado grande' : 'Error interno del servidor' });
+  res.status(status).json({ ...(error.fields ? { fields: error.fields } : {}), message: error.status ? error.message : invalidJson ? 'JSON inválido' : tooLarge ? 'Solicitud demasiado grande' : 'Error interno del servidor' });
 });
