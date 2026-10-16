@@ -1,22 +1,11 @@
 <script setup>
-import { useSystemStore } from '../stores/system';
-const system = useSystemStore();
+import { useContentStore } from '../stores/content';
+const store = useContentStore();
 </script>
-
 <template>
-  <section class="hero">
-    <p class="eyebrow">SISTEMA INTEGRAL DE GESTIÓN</p>
-    <h1>Un espacio para conectar<br>atención y bienestar.</h1>
-    <p class="intro">SIGCA organizará los servicios, las citas y la atención de un centro de psicología y estimulación auditiva verbal.</p>
-    <RouterLink class="button" to="/servicios">Ver servicios <span aria-hidden="true">→</span></RouterLink>
-  </section>
-  <section class="status-panel" aria-labelledby="status-title">
-    <div><p class="eyebrow">AVANCE 01</p><h2 id="status-title">El proyecto comienza aquí</h2><p>La estructura inicial está lista. Los módulos del centro se agregarán en los siguientes avances.</p></div>
-    <div class="connection"><button class="button secondary" :disabled="system.status === 'loading'" @click="system.checkConnection">{{ system.status === 'loading' ? 'Comprobando…' : 'Comprobar conexión' }}</button><p role="status" :class="system.status">{{ system.message }}</p></div>
-  </section>
-  <section class="roadmap" aria-label="Próximos módulos">
-    <article><span>01</span><h2>Portal público</h2><p>Información del centro, servicios y contacto.</p><RouterLink class="text-button" to="/servicios">Consultar servicios →</RouterLink></article>
-    <article><span>02</span><h2>Gestión de atención</h2><p>Pacientes, responsables y calendario de citas.</p><small>Próximamente</small></article>
-    <article><span>03</span><h2>Control administrativo</h2><p>Usuarios, materiales, pagos y caja diaria.</p><small>Próximamente</small></article>
-  </section>
+  <p v-if="store.loading" class="empty-state" role="status">Cargando información del centro…</p>
+  <template v-else-if="store.content">
+    <section class="hero"><p class="eyebrow">{{ store.content.nombreCentro }}</p><h1>{{ store.content.tituloInicio }}</h1><p class="intro public-copy">{{ store.content.descripcionInicio }}</p><RouterLink class="button" to="/servicios">Ver servicios <span aria-hidden="true">→</span></RouterLink></section>
+    <section class="welcome-panel"><div><p class="eyebrow">NUESTRO PROPÓSITO</p><h2>Conoce lo que nos inspira.</h2><p>Descubre la misión y la visión que guían la atención de nuestro centro.</p></div><RouterLink class="button secondary" to="/nosotros">Misión y visión →</RouterLink></section>
+  </template>
 </template>

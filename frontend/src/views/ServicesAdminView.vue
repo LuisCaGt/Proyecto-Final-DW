@@ -1,4 +1,5 @@
 <script setup>
+import AdminNavigation from '../components/AdminNavigation.vue';
 import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue';
 import { useServicesStore } from '../stores/services';
 import { formatMoney, toCents } from '../utils/money';
@@ -58,6 +59,7 @@ onMounted(load);
 
 <template>
   <section class="page-heading"><p class="eyebrow">ADMINISTRACIÓN</p><h1>Servicios del centro</h1><p class="intro">Registra la oferta de atención y actualiza sus precios, duración y disponibilidad.</p></section>
+  <AdminNavigation />
   <p class="dev-note">Vista de desarrollo local. La autenticación y los permisos de administrador están pendientes de integración.</p>
   <p v-if="error" class="feedback error" role="alert">{{ error }}</p>
   <p v-if="notice" class="feedback success" role="status">{{ notice }}</p>
