@@ -1,0 +1,206 @@
+{
+  "info": {
+    "name": "SIGCA — Servicios",
+    "description": "Pruebas locales. Habilitar ENABLE_DEV_ADMIN para operaciones administrativas. No contiene credenciales.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000"
+    },
+    {
+      "key": "serviceId",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "Listar públicos",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/servicios"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Solo activos', () => { pm.response.to.have.status(200); pm.response.json().forEach(s => pm.expect(s.estado).to.eql('ACTIVO')); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Registrar servicio",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/servicios",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"nombre\": \"Servicio de prueba Postman\",\n  \"descripcion\": \"Datos ficticios para pruebas del m\\u00f3dulo.\",\n  \"duracionMinutos\": 60,\n  \"precioCentavos\": 25000,\n  \"imagen\": \"/images/servicio.svg\",\n  \"estado\": \"ACTIVO\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Creado', () => pm.response.to.have.status(201));",
+              "if (pm.response.code === 201) pm.collectionVariables.set('serviceId', pm.response.json()._id);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Consultar detalle",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/servicios/{{serviceId}}"
+      }
+    },
+    {
+      "name": "Editar servicio",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/servicios/{{serviceId}}",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"nombre\": \"Servicio de prueba Postman\",\n  \"descripcion\": \"Datos ficticios para pruebas del m\\u00f3dulo.\",\n  \"duracionMinutos\": 60,\n  \"precioCentavos\": 27550,\n  \"imagen\": \"/images/servicio.svg\",\n  \"estado\": \"ACTIVO\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Desactivar",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/servicios/{{serviceId}}/estado",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"estado\": \"INACTIVO\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Detalle inactivo no público",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/servicios/{{serviceId}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('No disponible', () => pm.response.to.have.status(404));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Listado administrativo",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/admin/servicios"
+      }
+    },
+    {
+      "name": "Reactivar",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/servicios/{{serviceId}}/estado",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"estado\": \"ACTIVO\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Rechazar precio inválido",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/servicios",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"nombre\": \"Servicio de prueba Postman\",\n  \"descripcion\": \"Datos ficticios para pruebas del m\\u00f3dulo.\",\n  \"duracionMinutos\": 60,\n  \"precioCentavos\": 1.25,\n  \"imagen\": \"/images/servicio.svg\",\n  \"estado\": \"ACTIVO\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Entrada inválida', () => pm.response.to.have.status(400));"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

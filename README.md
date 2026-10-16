@@ -9,8 +9,11 @@ Sistema Integral de Gestión de Citas y Atención, una aplicación web académic
 - Vue, Vite, Vue Router y Pinia.
 - Inicio, página de información y página 404.
 - Botón para comprobar la conexión frontend → API → MongoDB.
+- Catálogo público de servicios activos con imagen, descripción, duración y precio.
+- Administración de servicios: registro, edición, búsqueda, filtros y cambio de estado.
+- Precio en centavos enteros y eliminación lógica mediante estado INACTIVO.
 
-Esta es una base inicial: todavía no incluye servicios, contenido editable, login, pacientes ni citas.
+El contenido institucional editable, la autenticación, los pacientes y las citas están pendientes. El botón de solicitud de cita permanece deshabilitado hasta integrar ese módulo.
 
 ## Requisitos
 
@@ -88,6 +91,67 @@ frontend/
     main.js             # Registro de Vue, Router y Pinia
     style.css
 ```
+
+## Módulo de servicios
+
+### Acceso
+
+- `/servicios`: catálogo público, solo muestra servicios activos.
+- `/admin/servicios`: formulario y listado administrativo.
+
+La administración está bloqueada por defecto. Para probarla localmente, configura `ENABLE_DEV_ADMIN=true` en `backend/.env` y reinicia el backend. El acceso temporal solo se admite desde loopback y se bloquea con `NODE_ENV=production`. Express escucha en `127.0.0.1`.
+
+Este acceso de desarrollo deberá reemplazarse por JWT y autorización del rol ADMINISTRADOR al integrar usuarios. No es un sistema de autenticación. El frontend puede mostrar la pantalla administrativa, pero las operaciones y el listado privado se protegen desde la API.
+
+### Datos ficticios
+
+Con MongoDB disponible y `MONGODB_URI` configurado, ejecuta desde `backend/`:
+
+```bash
+npm run seed:servicios
+```
+
+Carga cinco servicios ficticios. Repetir el comando no duplica los servicios con el mismo nombre ni modifica sus datos existentes.
+
+### Endpoints
+
+| Método | Ruta | Función |
+| --- | --- | --- |
+| GET | /api/servicios | Servicios activos |
+| GET | /api/servicios/:id | Detalle de un servicio activo |
+| GET | /api/admin/servicios | Todos los servicios; acceso administrativo |
+| POST | /api/servicios | Registrar; acceso administrativo |
+| PUT | /api/servicios/:id | Editar datos completos; acceso administrativo |
+| PATCH | /api/servicios/:id/estado | Activar o desactivar; acceso administrativo |
+
+Ejemplo de registro:
+
+```json
+{
+  "nombre": "Atención psicológica",
+  "descripcion": "Acompañamiento psicológico individual.",
+  "duracionMinutos": 60,
+  "precioCentavos": 25000,
+  "imagen": "/images/servicio.svg",
+  "estado": "ACTIVO"
+}
+```
+
+`precioCentavos: 25000` representa Q250.00. La API requiere un número entero, entre 0 y 99999999 centavos. La duración debe ser un entero de 1 a 1440 minutos. La imagen admite una URL HTTP/HTTPS o un recurso local en `/images/`.
+
+El frontend incluye una ilustración de respaldo si la imagen no carga. No hay eliminación física de servicios. Las citas deberán copiar la duración y el precio vigentes al momento de programarse; ese módulo todavía está pendiente.
+
+### Pruebas manuales
+
+Importa `docs/SIGCA-servicios.postman_collection.json` en Postman. La petición de registro guarda el identificador en la variable `serviceId`; ejecuta después edición, desactivación, consulta pública y reactivación.
+
+Comprueba también:
+
+1. Registrar y editar desde la pantalla administrativa; recargar y verificar persistencia.
+2. Desactivar: debe desaparecer del catálogo y permanecer en administración.
+3. Reactivar: debe volver al catálogo.
+4. Enviar precio decimal en centavos, duración cero o imagen con protocolo inválido: respuesta 400.
+5. Deshabilitar `ENABLE_DEV_ADMIN`: las operaciones administrativas responden 403.
 
 ## Referencias
 
