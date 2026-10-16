@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import mongoose from 'mongoose';
+import { contenidoRouter } from './routes/contenidoRoutes.js';
 import { serviciosRouter, serviciosAdminRouter } from './routes/serviciosRoutes.js';
 
 export const app = express();
@@ -16,6 +17,7 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+app.use('/api/contenido', contenidoRouter);
 app.use('/api/servicios', serviciosRouter);
 app.use('/api/admin/servicios', serviciosAdminRouter);
 
