@@ -8,6 +8,7 @@ export default createRouter({
   routes: [
     { path: '/', name: 'inicio', component: HomeView },
     { path: '/acerca-de', name: 'acerca', component: AboutView },
+    { path: '/admin/servicios', name: 'admin-servicios', component: () => import('../views/ServicesAdminView.vue') },
     { path: '/:pathMatch(.*)*', component: NotFoundView },
   ],
   scrollBehavior: () => ({ top: 0 }),
