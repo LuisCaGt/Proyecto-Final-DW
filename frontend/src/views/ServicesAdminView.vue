@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, reactive, ref } from 'vue';
+import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue';
 import { useServicesStore } from '../stores/services';
 import { formatMoney, toCents } from '../utils/money';
 const store = useServicesStore();
@@ -10,6 +10,10 @@ const notice = ref('');
 const fields = ref({});
 const editingId = ref(null);
 const pendingState = ref(null);
+const confirmationDialog = ref(null);
+watch(pendingState, async (item) => {
+  if (item) { await nextTick(); confirmationDialog.value?.showModal(); }
+});
 const filter = ref('TODOS');
 const search = ref('');
 const formSection = ref(null);
@@ -80,5 +84,5 @@ onMounted(load);
       <ul v-else class="admin-services"><li v-for="item in visible" :key="item._id"><div class="service-line"><h3>{{ item.nombre }}</h3><span class="badge" :class="item.estado.toLowerCase()">{{ item.estado === 'ACTIVO' ? 'Activo' : 'Inactivo' }}</span></div><p>{{ item.duracionMinutos }} minutos · {{ formatMoney(item.precioCentavos) }}</p><div class="actions"><button class="text-button" :disabled="busy" @click="edit(item)" :aria-label="`Editar ${item.nombre}`">Editar</button><button class="text-button" :disabled="busy" @click="pendingState = item" :aria-label="`${item.estado === 'ACTIVO' ? 'Desactivar' : 'Activar'} ${item.nombre}`">{{ item.estado === 'ACTIVO' ? 'Desactivar' : 'Activar' }}</button></div></li></ul>
     </section>
   </div>
-  <div v-if="pendingState" class="modal-backdrop" @keydown.esc="!busy && (pendingState = null)"><section class="confirm-panel" role="dialog" aria-modal="true" aria-labelledby="confirm-title" tabindex="-1"><h2 id="confirm-title">¿{{ pendingState.estado === 'ACTIVO' ? 'Desactivar' : 'Activar' }} servicio?</h2><p>{{ pendingState.nombre }}</p><p>{{ pendingState.estado === 'ACTIVO' ? 'Dejará de aparecer en el portal público. Su información se conservará.' : 'Volverá a aparecer en el portal público.' }}</p><div class="actions"><button class="button" :disabled="busy" @click="confirmState">{{ busy ? 'Guardando…' : 'Confirmar' }}</button><button class="button secondary" :disabled="busy" @click="pendingState = null">Cancelar</button></div></section></div>
+  <dialog v-if="pendingState" ref="confirmationDialog" class="confirm-panel" aria-labelledby="confirm-title" @cancel.prevent="!busy && (pendingState = null)"><h2 id="confirm-title">¿{{ pendingState.estado === 'ACTIVO' ? 'Desactivar' : 'Activar' }} servicio?</h2><p>{{ pendingState.nombre }}</p><p>{{ pendingState.estado === 'ACTIVO' ? 'Dejará de aparecer en el portal público. Su información se conservará.' : 'Volverá a aparecer en el portal público.' }}</p><div class="actions"><button class="button" :disabled="busy" @click="confirmState">{{ busy ? 'Guardando…' : 'Confirmar' }}</button><button class="button secondary" :disabled="busy" @click="pendingState = null" autofocus>Cancelar</button></div></dialog>
 </template>
