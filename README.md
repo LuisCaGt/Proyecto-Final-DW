@@ -8,12 +8,12 @@ Sistema Integral de Gestión de Citas y Atención, una aplicación web académic
 - API Express, conexión MongoDB y ruta de salud.
 - Vue, Vite, Vue Router y Pinia.
 - Inicio, página de información y página 404.
-- Botón para comprobar la conexión frontend → API → MongoDB.
+- Nombre, logo, presentación de inicio, misión y visión editables desde administración.
 - Catálogo público de servicios activos con imagen, descripción, duración y precio.
 - Administración de servicios: registro, edición, búsqueda, filtros y cambio de estado.
 - Precio en centavos enteros y eliminación lógica mediante estado INACTIVO.
 
-El contenido institucional editable, la autenticación, los pacientes y las citas están pendientes. El botón de solicitud de cita permanece deshabilitado hasta integrar ese módulo.
+La autenticación, los pacientes, las citas, el carrusel y los demás módulos de contenido están pendientes. El botón de solicitud de cita permanece deshabilitado hasta integrar ese módulo.
 
 ## Requisitos
 
@@ -58,11 +58,11 @@ Abre http://localhost:5173. Vite redirige `/api` al backend en el puerto 3000. S
 
 ## Verificación de funcionamiento
 
-1. Abre Inicio y navega a Acerca del proyecto.
-2. Usa el botón Comprobar conexión: debe mostrar que API y MongoDB están conectados.
+1. Abre Inicio y navega a Misión y visión.
+2. Edita el contenido desde Administración y verifica que se refleje en el portal.
 3. Consulta `http://localhost:3000/api/health`: responde 200 y JSON cuando la base está conectada, o 503 si se pierde la conexión.
 4. Abre una dirección desconocida en el frontend: debe aparecer la página 404.
-5. Detén el backend y pulsa Comprobar conexión: debe aparecer un mensaje de error.
+5. Detén el backend y recarga el portal: debe aparecer un mensaje de error con opción para reintentar.
 
 Para generar la versión de producción del frontend:
 
@@ -152,6 +152,26 @@ Comprueba también:
 3. Reactivar: debe volver al catálogo.
 4. Enviar precio decimal en centavos, duración cero o imagen con protocolo inválido: respuesta 400.
 5. Deshabilitar `ENABLE_DEV_ADMIN`: las operaciones administrativas responden 403.
+
+## Contenido institucional
+
+La colección `contenidoInstitucional` almacena un documento único con identificador `principal`. La primera consulta crea en MongoDB la configuración inicial ficticia del Centro Armonía; las consultas siguientes conservan los valores guardados.
+
+| Método | Ruta | Acceso |
+| --- | --- | --- |
+| GET | /api/contenido | Público |
+| PUT | /api/contenido/principal | Administrativo |
+
+Campos obligatorios: `nombreCentro` (100 caracteres), `logo` (2048), `tituloInicio` (180), `descripcionInicio` (1500), `mision` (3000) y `vision` (3000). La actualización requiere todos los campos. El logo admite HTTP/HTTPS o una imagen local en `/images/`. Se incluye `/images/logo.svg`.
+
+- `/admin/contenido`: editor de identidad, inicio, misión y visión. Comparte el acceso administrativo temporal descrito en el módulo de servicios.
+- `/`: muestra el título y la información principal guardados.
+- `/nosotros`: muestra misión y visión.
+- El encabezado, el pie y el título del navegador utilizan el nombre configurado. Si una imagen del logo no carga, se muestra un respaldo visual.
+
+El editor muestra una vista previa de la identidad, mensajes de validación y confirmación, y permite descartar cambios. Al navegar fuera del formulario con cambios pendientes solicita confirmación. Tras guardar, el estado compartido actualiza las vistas públicas. Las demás pestañas reciben el contenido actualizado al recargar.
+
+Importa `docs/SIGCA-contenido.postman_collection.json` para consultar y actualizar el contenido. Comprueba persistencia recargando la página y verifica que las entradas inválidas respondan 400 y que la edición sin acceso habilitado responda 403.
 
 ## Referencias
 

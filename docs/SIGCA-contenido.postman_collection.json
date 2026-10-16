@@ -1,0 +1,133 @@
+{
+  "info": {
+    "name": "SIGCA — Contenido institucional",
+    "description": "Datos ficticios. Habilitar acceso administrativo de desarrollo para probar PUT. La actualización modifica el contenido del centro.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000"
+    }
+  ],
+  "item": [
+    {
+      "name": "Consultar contenido",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/contenido"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Estado esperado', () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Actualizar contenido",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/contenido/principal",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"nombreCentro\": \"Centro Armonía\",\n  \"logo\": \"/images/logo.svg\",\n  \"tituloInicio\": \"Acompañamos tu bienestar en cada etapa.\",\n  \"descripcionInicio\": \"Atención psicológica y estimulación auditiva verbal para acompañar el bienestar y el desarrollo de cada persona.\",\n  \"mision\": \"Acompañar a las personas y sus familias con atención cercana, respetuosa y orientada a sus necesidades.\",\n  \"vision\": \"Ser un centro de referencia por la calidad humana y el compromiso con el desarrollo y bienestar de nuestra comunidad.\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Estado esperado', () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Rechazar misión vacía",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/contenido/principal",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"nombreCentro\": \"Centro Armonía\",\n  \"logo\": \"/images/logo.svg\",\n  \"tituloInicio\": \"Acompañamos tu bienestar en cada etapa.\",\n  \"descripcionInicio\": \"Atención psicológica y estimulación auditiva verbal para acompañar el bienestar y el desarrollo de cada persona.\",\n  \"mision\": \" \",\n  \"vision\": \"Ser un centro de referencia por la calidad humana y el compromiso con el desarrollo y bienestar de nuestra comunidad.\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Estado esperado', () => pm.response.to.have.status(400));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Rechazar logo inválido",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/contenido/principal",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"nombreCentro\": \"Centro Armonía\",\n  \"logo\": \"javascript:alert(1)\",\n  \"tituloInicio\": \"Acompañamos tu bienestar en cada etapa.\",\n  \"descripcionInicio\": \"Atención psicológica y estimulación auditiva verbal para acompañar el bienestar y el desarrollo de cada persona.\",\n  \"mision\": \"Acompañar a las personas y sus familias con atención cercana, respetuosa y orientada a sus necesidades.\",\n  \"vision\": \"Ser un centro de referencia por la calidad humana y el compromiso con el desarrollo y bienestar de nuestra comunidad.\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Estado esperado', () => pm.response.to.have.status(400));"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
