@@ -1,0 +1,281 @@
+{
+  "info": {
+    "name": "SIGCA — Contacto",
+    "description": "Pruebas locales con datos ficticios. Los GET privados y las escrituras administrativas requieren ENABLE_DEV_ADMIN=true. No envía correos.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000"
+    },
+    {
+      "key": "mensajeId",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "Enviar mensaje ficticio",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/contacto",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"nombre\": \"Visitante Postman\",\n  \"correo\": \"postman@example.com\",\n  \"telefono\": \"+502 0000 0000\",\n  \"asunto\": \"Consulta de demostración Postman\",\n  \"mensaje\": \"Mensaje ficticio para pruebas locales.\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Estado esperado', () => pm.response.to.have.status(201));",
+              "pm.test('No expone datos del remitente', () => pm.expect(Object.keys(pm.response.json())).to.eql(['message']));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Listar mensajes Postman",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/contacto?buscar=Postman"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Estado esperado', () => pm.response.to.have.status(200));",
+              "if (pm.response.code === 200 && pm.response.json().mensajes.length) pm.collectionVariables.set('mensajeId', pm.response.json().mensajes[0]._id);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Consultar detalle",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/contacto/{{mensajeId}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Estado esperado', () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Marcar como leído",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/contacto/{{mensajeId}}/estado",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"estado\": \"LEIDO\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Estado esperado', () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Listar leídos",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/contacto?estado=LEIDO&pagina=1&limite=10"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Estado esperado', () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Consultar contacto público",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/contenido"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Estado esperado', () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Actualizar datos ficticios del centro",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/contenido/principal/contacto",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"correo\": \"contacto@example.com\",\n  \"telefono\": \"+502 0000 0000\",\n  \"direccion\": \"Dirección de demostración, Guatemala.\",\n  \"texto\": \"Datos ficticios del centro para pruebas del proyecto.\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Estado esperado', () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Rechazar correo inválido",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/contacto",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"nombre\": \"Visitante Postman\",\n  \"correo\": \"invalido\",\n  \"telefono\": \"+502 0000 0000\",\n  \"asunto\": \"Consulta de demostración Postman\",\n  \"mensaje\": \"Mensaje ficticio para pruebas locales.\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Estado esperado', () => pm.response.to.have.status(400));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Rechazar estado del remitente",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/contacto",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"nombre\": \"Visitante Postman\",\n  \"correo\": \"postman@example.com\",\n  \"telefono\": \"+502 0000 0000\",\n  \"asunto\": \"Consulta de demostración Postman\",\n  \"mensaje\": \"Mensaje ficticio para pruebas locales.\",\n  \"estado\": \"LEIDO\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Estado esperado', () => pm.response.to.have.status(400));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Rechazar límite inválido",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/contacto?limite=100"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Estado esperado', () => pm.response.to.have.status(400));"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

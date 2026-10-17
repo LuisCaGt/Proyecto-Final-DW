@@ -11,11 +11,14 @@ Sistema Integral de Gestión de Citas y Atención, una aplicación web académic
 - Nombre, logo, presentación de inicio, misión y visión editables desde administración.
 - Carrusel de cinco a diez imágenes, con edición y orden configurables.
 - Horario semanal configurable con días abiertos y cerrados.
+- Publicaciones educativas con fecha de publicación e imagen o enlace opcionales.
+- Actividades corporativas por tipo y galería de imágenes.
+- Datos públicos de contacto editables, formulario de mensajes y bandeja administrativa.
 - Catálogo público de servicios activos con imagen, descripción, duración y precio.
 - Administración de servicios: registro, edición, búsqueda, filtros y cambio de estado.
 - Precio en centavos enteros y eliminación lógica mediante estado INACTIVO.
 
-La autenticación, los pacientes, las citas, las publicaciones, las actividades corporativas y el contacto están pendientes. El botón de solicitud de cita permanece deshabilitado hasta integrar ese módulo.
+La autenticación, los pacientes y las citas están pendientes. El acceso administrativo actual es únicamente para desarrollo local. El botón de solicitud de cita permanece deshabilitado hasta integrar ese módulo.
 
 ## Requisitos
 
@@ -197,6 +200,90 @@ Importa `docs/SIGCA-contenido.postman_collection.json` para consultar y actualiz
 - El futuro módulo de citas deberá consumir esta configuración y validar los intervalos en el backend al programar o reprogramar citas.
 
 Las escrituras de ambos módulos usan el mismo control administrativo temporal, bloqueado por defecto y en producción. Los formularios advierten al navegar con cambios sin guardar. Consulta `docs/SIGCA-carrusel-horarios.postman_collection.json` para probar respuestas válidas, mínimo de imágenes e intervalos inválidos.
+
+## Publicaciones educativas y actividades corporativas
+
+### Pantallas
+
+| Sección | Portal público | Administración |
+| --- | --- | --- |
+| Contenido educativo | /educativo | /admin/publicaciones |
+| Corporativo | /corporativo | /admin/actividades |
+
+Los formularios permiten registrar, editar y activar o desactivar contenidos. El listado administrativo permite buscar por título y filtrar por estado. Los registros no se eliminan físicamente; los inactivos permanecen en administración y se excluyen de las consultas públicas. La administración utiliza el acceso temporal de desarrollo y deberá integrarse con JWT y el rol ADMINISTRADOR.
+
+Las publicaciones requieren título (máximo 160 caracteres), descripción (6000) y `fechaPublicacion` en formato AAAA-MM-DD. `imagen` y `enlace` son opcionales y se guardan como cadenas vacías si no se proporcionan. Las fechas se almacenan sin conversión de zona horaria y se muestran sin desplazamiento de día. La fecha es informativa: un contenido ACTIVO se muestra aunque su fecha sea futura; no se implementa publicación programada.
+
+Las actividades requieren título, descripción, un tipo (`CAPACITACION`, `ESCUELA_PARA_PADRES` u `OTRA`) y entre una y cinco URLs en `imagenes`. La vista pública permite filtrar por tipo y muestra todas las imágenes de la actividad.
+
+Las imágenes admiten URLs HTTP/HTTPS o rutas locales de `/images/`. Los enlaces externos solo admiten HTTP/HTTPS y se abren en otra pestaña con protección `noopener noreferrer`. Los textos se muestran como texto, sin interpretar HTML. Si una imagen no carga, se muestra una ilustración local de respaldo.
+
+### API REST
+
+Las publicaciones usan `/api/publicaciones` y `/api/admin/publicaciones`; las actividades usan `/api/actividades` y `/api/admin/actividades`.
+
+| Método | Ruta relativa al recurso | Operación |
+| --- | --- | --- |
+| GET | / | Listado público de activos |
+| GET | /:id | Detalle público de un activo |
+| POST | / | Registrar, requiere administración |
+| PUT | /:id | Editar todos los campos del formulario, requiere administración |
+| PATCH | /:id/estado | Activar o desactivar, requiere administración |
+| GET | /api/admin/publicaciones o /api/admin/actividades | Todos los registros, requiere administración |
+
+Se guardan en las colecciones `publicaciones` y `actividadesCorporativas`, con fechas de creación y actualización. Las publicaciones se ordenan por fecha de publicación descendente y las actividades por fecha de registro descendente.
+
+### Datos de demostración y pruebas
+
+Con MongoDB configurado, ejecuta desde `backend/`:
+
+```bash
+npm run seed:contenido
+```
+
+Carga tres publicaciones y tres actividades ficticias, incluyendo una capacitación, una escuela para padres y otra actividad. No reemplaza registros existentes con el mismo título. Las publicaciones de demostración no incluyen recomendaciones clínicas.
+
+Importa `docs/SIGCA-editorial.postman_collection.json`. Ejecuta cada grupo en orden para registrar un contenido, guardar su identificador, editarlo, desactivarlo, comprobar que su detalle público devuelve 404 y reactivarlo. Comprueba también fechas imposibles, protocolos de enlace inválidos y galerías vacías: deben responder 400. Con el acceso administrativo deshabilitado o en producción, las operaciones privadas responden 403.
+
+## Contacto y mensajes
+
+### Pantallas
+
+- `/contacto`: información pública del centro y formulario con nombre, correo, teléfono, asunto y mensaje.
+- `/admin/contacto`: edición de correo, teléfono, dirección y texto de presentación.
+- `/admin/mensajes`: búsqueda por nombre, correo o asunto, filtro de estado, paginación y consulta del detalle. Permite marcar como leído o nuevo sin eliminar el mensaje.
+
+El formulario guarda los mensajes en la colección `mensajesContacto`. No envía correos electrónicos ni genera solicitudes de cita. La confirmación se muestra después de que MongoDB acepta el registro; ante un error se conservan los campos para reintentar.
+
+Los datos públicos se guardan en `contenidoInstitucional.contacto`. La primera consulta agrega información ficticia a documentos que todavía no tengan este campo, sin reemplazar otros datos del centro. Actualiza los datos de demostración antes de usar el portal con información institucional real.
+
+### API
+
+| Método | Ruta | Acceso |
+| --- | --- | --- |
+| POST | /api/contacto | Público: guardar mensaje |
+| GET | /api/contacto | Administrativo: listado paginado |
+| GET | /api/contacto/:id | Administrativo: detalle |
+| PATCH | /api/contacto/:id/estado | Administrativo: cambiar a NUEVO o LEIDO |
+| PUT | /api/contenido/principal/contacto | Administrativo: editar datos del centro |
+
+El listado acepta `pagina` (desde 1), `limite` (1–50), `estado` (NUEVO o LEIDO) y `buscar` (máximo 120 caracteres). Devuelve `mensajes`, `total`, `pagina` y `totalPaginas`; los resultados se ordenan del más reciente al más antiguo. La búsqueda interpreta el texto literalmente. El cuerpo y el teléfono del remitente solo se incluyen en el detalle administrativo. La respuesta pública de registro contiene únicamente una confirmación, no el documento ni datos de otros remitentes.
+
+Límites del mensaje: nombre 120, correo 254, teléfono 30, asunto 160 y mensaje 5000 caracteres. Todos son obligatorios. El teléfono admite de 7 a 15 dígitos, con un prefijo + opcional y separadores habituales. No se aceptan campos adicionales como un estado enviado por el visitante. Los textos se muestran sin interpretar HTML.
+
+Los datos del centro requieren `correo`, `telefono`, `direccion` (máximo 300) y `texto` (1000). Se actualizan de forma independiente del carrusel y del resto del contenido institucional.
+
+### Datos ficticios y pruebas
+
+Desde `backend/`, con MongoDB disponible:
+
+```bash
+npm run seed:contacto
+```
+
+Genera dos mensajes ficticios, uno nuevo y otro leído, y conserva los mensajes existentes que tengan el mismo correo y asunto. El formulario funciona aunque no se ejecute este script.
+
+Importa `docs/SIGCA-contacto.postman_collection.json`. Verifica registro público (201), rechazo de campos inválidos (400), listado, consulta del detalle, cambio de estado y paginación. Deshabilitar `ENABLE_DEV_ADMIN` debe bloquear listado, detalle, cambios de estado y edición del centro con 403, manteniendo disponible el envío público. La integración definitiva deberá autorizar la consulta de mensajes para ADMINISTRADOR.
 
 ## Referencias
 
