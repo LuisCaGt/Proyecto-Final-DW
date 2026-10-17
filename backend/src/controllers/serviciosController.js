@@ -6,7 +6,7 @@ function validateBody(body, stateOnly = false) {
     const error = new Error('Envía un objeto JSON.'); error.status = 400; throw error;
   }
   const allowed = stateOnly ? ['estado'] : ['nombre', 'descripcion', 'duracionMinutos', 'precioCentavos', 'imagen', 'estado'];
-  const errors = {};
+  const errors = Object.create(null);
   for (const key of Object.keys(body)) if (!allowed.includes(key)) errors[key] = 'Campo no permitido.';
   if (!stateOnly) {
     for (const [key, max] of [['nombre', 120], ['descripcion', 2000]]) {
