@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { validEmail, validPhone } from './MensajeContacto.js';
 import { isImageUrl } from './Servicio.js';
 
 export const initialSlides = [
@@ -9,7 +10,14 @@ export const initialSlides = [
   ['atencion', 'Atención cercana', 'Ilustración de dos personas en un espacio de conversación.'],
 ].map(([file, titulo, textoAlternativo]) => ({ imagen: `/images/carrusel-${file}.svg`, titulo, textoAlternativo }));
 
+export const initialContact = {
+  correo: 'contacto@example.com',
+  telefono: '+502 0000 0000',
+  direccion: 'Dirección de demostración, Guatemala.',
+  texto: 'Escríbenos para solicitar información sobre los servicios y actividades del centro. Los datos de contacto iniciales son ficticios y pueden cambiarse desde administración.',
+};
 export const initialContent = {
+  contacto: initialContact,
   carrusel: initialSlides,
   nombreCentro: 'Centro Armonía',
   logo: '/images/logo.svg',
@@ -24,8 +32,15 @@ const slideSchema = new mongoose.Schema({
   titulo: { type: String, required: true, maxlength: 100 },
   textoAlternativo: { type: String, required: true, maxlength: 180 },
 }, { _id: false });
+const contactSchema = new mongoose.Schema({
+  correo: { type: String, required: true, maxlength: 254, validate: validEmail },
+  telefono: { type: String, required: true, maxlength: 30, validate: validPhone },
+  direccion: { type: String, required: true, maxlength: 300 },
+  texto: { type: String, required: true, maxlength: 1000 },
+}, { _id: false });
 const schema = new mongoose.Schema({
   _id: { type: String, default: 'principal', enum: ['principal'] },
+  contacto: { type: contactSchema, default: () => ({ ...initialContact }) },
   carrusel: { type: [slideSchema], default: () => initialSlides.map(slide => ({ ...slide })), validate: { validator: slides => slides.length >= 5 && slides.length <= 10, message: 'Incluye de cinco a diez imágenes.' } },
   nombreCentro: { type: String, required: true, trim: true, maxlength: 100 },
   logo: { type: String, required: true, trim: true, maxlength: 2048, validate: isImageUrl },

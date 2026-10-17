@@ -1,4 +1,4 @@
-import { ContenidoInstitucional, initialContent, initialSlides } from '../models/ContenidoInstitucional.js';
+import { ContenidoInstitucional, initialContent, initialSlides, initialContact } from '../models/ContenidoInstitucional.js';
 import { isImageUrl } from '../models/Servicio.js';
 
 const limits = { nombreCentro: 100, logo: 2048, tituloInicio: 180, descripcionInicio: 1500, mision: 3000, vision: 3000 };
@@ -20,6 +20,7 @@ function validate(body) {
 }
 
 export async function getContent(req, res) {
+  await ContenidoInstitucional.updateOne({ _id: 'principal', contacto: { $exists: false } }, { $set: { contacto: initialContact } }, { timestamps: false, runValidators: true });
   // Una sola configuración, creada de forma atómica con datos ficticios iniciales.
   await ContenidoInstitucional.updateOne({ _id: 'principal', carrusel: { $exists: false } }, { $set: { carrusel: initialSlides } }, { timestamps: false, runValidators: true });
   const content = await ContenidoInstitucional.findByIdAndUpdate('principal', { $setOnInsert: initialContent }, {

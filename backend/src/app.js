@@ -1,6 +1,8 @@
 import express from 'express';
 import cors from 'cors';
 import mongoose from 'mongoose';
+import { contactoRouter } from './routes/contactoRoutes.js';
+import { editorialRoutes } from './routes/editorialRoutes.js';
 import { horariosRouter } from './routes/horariosRoutes.js';
 import { contenidoRouter } from './routes/contenidoRoutes.js';
 import { serviciosRouter, serviciosAdminRouter } from './routes/serviciosRoutes.js';
@@ -18,6 +20,14 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+const publications = editorialRoutes(true);
+const activities = editorialRoutes(false);
+app.use('/api/publicaciones', publications.publicRouter);
+app.use('/api/admin/publicaciones', publications.adminRouter);
+app.use('/api/actividades', activities.publicRouter);
+app.use('/api/admin/actividades', activities.adminRouter);
+
+app.use('/api/contacto', contactoRouter);
 app.use('/api/horarios', horariosRouter);
 app.use('/api/contenido', contenidoRouter);
 app.use('/api/servicios', serviciosRouter);

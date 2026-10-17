@@ -5,7 +5,9 @@
   "scripts": {
     "dev": "node --watch src/server.js",
     "start": "node src/server.js",
-    "seed:servicios": "node scripts/seedServicios.js"
+    "seed:servicios": "node scripts/seedServicios.js",
+    "seed:contenido": "node scripts/seedEditorial.js",
+    "seed:contacto": "node scripts/seedContacto.js"
   },
   "keywords": [],
   "author": "",
