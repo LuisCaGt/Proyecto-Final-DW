@@ -9,11 +9,13 @@ Sistema Integral de Gestión de Citas y Atención, una aplicación web académic
 - Vue, Vite, Vue Router y Pinia.
 - Inicio, página de información y página 404.
 - Nombre, logo, presentación de inicio, misión y visión editables desde administración.
+- Carrusel de cinco a diez imágenes, con edición y orden configurables.
+- Horario semanal configurable con días abiertos y cerrados.
 - Catálogo público de servicios activos con imagen, descripción, duración y precio.
 - Administración de servicios: registro, edición, búsqueda, filtros y cambio de estado.
 - Precio en centavos enteros y eliminación lógica mediante estado INACTIVO.
 
-La autenticación, los pacientes, las citas, el carrusel y los demás módulos de contenido están pendientes. El botón de solicitud de cita permanece deshabilitado hasta integrar ese módulo.
+La autenticación, los pacientes, las citas, las publicaciones, las actividades corporativas y el contacto están pendientes. El botón de solicitud de cita permanece deshabilitado hasta integrar ese módulo.
 
 ## Requisitos
 
@@ -172,6 +174,29 @@ Campos obligatorios: `nombreCentro` (100 caracteres), `logo` (2048), `tituloInic
 El editor muestra una vista previa de la identidad, mensajes de validación y confirmación, y permite descartar cambios. Al navegar fuera del formulario con cambios pendientes solicita confirmación. Tras guardar, el estado compartido actualiza las vistas públicas. Las demás pestañas reciben el contenido actualizado al recargar.
 
 Importa `docs/SIGCA-contenido.postman_collection.json` para consultar y actualizar el contenido. Comprueba persistencia recargando la página y verifica que las entradas inválidas respondan 400 y que la edición sin acceso habilitado responda 403.
+
+## Carrusel de inicio
+
+- `/admin/carrusel`: permite editar URL, título y texto alternativo, agregar o quitar imágenes y cambiar su orden.
+- El portal muestra el carrusel en `/`, con botones anterior/siguiente e indicadores accesibles. El cambio es manual, sin reproducción automática.
+- Deben guardarse entre cinco y diez imágenes. No se exige alojamiento de archivos: se aceptan HTTP/HTTPS y recursos locales en `/images/`.
+- Se incluyen cinco ilustraciones SVG locales. Si una imagen no carga, se muestra una imagen de respaldo.
+- `PUT /api/contenido/principal/carrusel` recibe `{ "carrusel": [...] }`. Cada elemento requiere `imagen` (máximo 2048 caracteres), `titulo` (100) y `textoAlternativo` (180).
+- Las imágenes se guardan dentro del documento institucional. La primera consulta agrega las imágenes iniciales a documentos anteriores que no tengan carrusel, sin reemplazar nombre, misión ni otros cambios existentes.
+- La edición institucional y la edición del carrusel actualizan campos distintos para conservar la configuración del otro formulario.
+
+## Horarios de atención
+
+- `/horarios`: tabla pública de lunes a domingo, con horas en formato de 24 horas y días cerrados.
+- `/admin/horarios`: edición de apertura, cierre y disponibilidad de cada día.
+- `GET /api/horarios` obtiene la configuración; `PUT /api/horarios` la actualiza con `{ "dias": [...] }`.
+- La colección `horarios` conserva un documento con `_id: "atencion"`, `zonaHoraria: "America/Guatemala"` y siete elementos en `dias`.
+- Cada día tiene `dia` (0: domingo a 6: sábado), `abierto` (booleano), `inicio` y `fin` (HH:mm). Los días cerrados se guardan con horas `null`.
+- Deben enviarse los siete días, sin duplicados. El cierre de un día abierto debe ser posterior a su apertura; no se admiten intervalos que crucen medianoche. Puede configurarse toda la semana cerrada.
+- La primera consulta crea un horario ficticio: lunes a viernes 08:00–17:00, sábado 08:00–12:00 y domingo cerrado. Es editable; no representa un horario real del centro.
+- El futuro módulo de citas deberá consumir esta configuración y validar los intervalos en el backend al programar o reprogramar citas.
+
+Las escrituras de ambos módulos usan el mismo control administrativo temporal, bloqueado por defecto y en producción. Los formularios advierten al navegar con cambios sin guardar. Consulta `docs/SIGCA-carrusel-horarios.postman_collection.json` para probar respuestas válidas, mínimo de imágenes e intervalos inválidos.
 
 ## Referencias
 

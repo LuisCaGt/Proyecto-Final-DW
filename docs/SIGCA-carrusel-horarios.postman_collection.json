@@ -1,0 +1,185 @@
+{
+  "info": {
+    "name": "SIGCA — Carrusel y horarios",
+    "description": "Datos ficticios. Las peticiones PUT modifican la configuración y requieren ENABLE_DEV_ADMIN=true en desarrollo local.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000"
+    }
+  ],
+  "item": [
+    {
+      "name": "Consultar carrusel y contenido",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/contenido"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Estado esperado', () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Guardar carrusel",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/contenido/principal/carrusel",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"carrusel\": [\n    {\n      \"imagen\": \"/images/carrusel-bienestar.svg\",\n      \"titulo\": \"Bienestar emocional\",\n      \"textoAlternativo\": \"Ilustración de una planta.\"\n    },\n    {\n      \"imagen\": \"/images/carrusel-escucha.svg\",\n      \"titulo\": \"Escucha y comunicación\",\n      \"textoAlternativo\": \"Ilustración de diálogo.\"\n    },\n    {\n      \"imagen\": \"/images/carrusel-familia.svg\",\n      \"titulo\": \"Acompañamiento familiar\",\n      \"textoAlternativo\": \"Ilustración de una familia.\"\n    },\n    {\n      \"imagen\": \"/images/carrusel-desarrollo.svg\",\n      \"titulo\": \"Desarrollo en cada etapa\",\n      \"textoAlternativo\": \"Ilustración de formas de aprendizaje.\"\n    },\n    {\n      \"imagen\": \"/images/carrusel-atencion.svg\",\n      \"titulo\": \"Atención cercana\",\n      \"textoAlternativo\": \"Ilustración de una conversación.\"\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Estado esperado', () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Rechazar menos de cinco imágenes",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/contenido/principal/carrusel",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"carrusel\": [\n    {\n      \"imagen\": \"/images/carrusel-bienestar.svg\",\n      \"titulo\": \"Bienestar emocional\",\n      \"textoAlternativo\": \"Ilustración de una planta.\"\n    },\n    {\n      \"imagen\": \"/images/carrusel-escucha.svg\",\n      \"titulo\": \"Escucha y comunicación\",\n      \"textoAlternativo\": \"Ilustración de diálogo.\"\n    },\n    {\n      \"imagen\": \"/images/carrusel-familia.svg\",\n      \"titulo\": \"Acompañamiento familiar\",\n      \"textoAlternativo\": \"Ilustración de una familia.\"\n    },\n    {\n      \"imagen\": \"/images/carrusel-desarrollo.svg\",\n      \"titulo\": \"Desarrollo en cada etapa\",\n      \"textoAlternativo\": \"Ilustración de formas de aprendizaje.\"\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Estado esperado', () => pm.response.to.have.status(400));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Consultar horarios",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/horarios"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Estado esperado', () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Guardar horario semanal",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/horarios",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"dias\": [\n    {\n      \"dia\": 0,\n      \"abierto\": false,\n      \"inicio\": null,\n      \"fin\": null\n    },\n    {\n      \"dia\": 1,\n      \"abierto\": true,\n      \"inicio\": \"08:00\",\n      \"fin\": \"17:00\"\n    },\n    {\n      \"dia\": 2,\n      \"abierto\": true,\n      \"inicio\": \"08:00\",\n      \"fin\": \"17:00\"\n    },\n    {\n      \"dia\": 3,\n      \"abierto\": true,\n      \"inicio\": \"08:00\",\n      \"fin\": \"17:00\"\n    },\n    {\n      \"dia\": 4,\n      \"abierto\": true,\n      \"inicio\": \"08:00\",\n      \"fin\": \"17:00\"\n    },\n    {\n      \"dia\": 5,\n      \"abierto\": true,\n      \"inicio\": \"08:00\",\n      \"fin\": \"17:00\"\n    },\n    {\n      \"dia\": 6,\n      \"abierto\": true,\n      \"inicio\": \"08:00\",\n      \"fin\": \"12:00\"\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Estado esperado', () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Rechazar cierre anterior a apertura",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/horarios",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"dias\": [\n    {\n      \"dia\": 0,\n      \"abierto\": false,\n      \"inicio\": null,\n      \"fin\": null\n    },\n    {\n      \"dia\": 1,\n      \"abierto\": true,\n      \"inicio\": \"08:00\",\n      \"fin\": \"07:00\"\n    },\n    {\n      \"dia\": 2,\n      \"abierto\": true,\n      \"inicio\": \"08:00\",\n      \"fin\": \"17:00\"\n    },\n    {\n      \"dia\": 3,\n      \"abierto\": true,\n      \"inicio\": \"08:00\",\n      \"fin\": \"17:00\"\n    },\n    {\n      \"dia\": 4,\n      \"abierto\": true,\n      \"inicio\": \"08:00\",\n      \"fin\": \"17:00\"\n    },\n    {\n      \"dia\": 5,\n      \"abierto\": true,\n      \"inicio\": \"08:00\",\n      \"fin\": \"17:00\"\n    },\n    {\n      \"dia\": 6,\n      \"abierto\": true,\n      \"inicio\": \"08:00\",\n      \"fin\": \"12:00\"\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Estado esperado', () => pm.response.to.have.status(400));"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
