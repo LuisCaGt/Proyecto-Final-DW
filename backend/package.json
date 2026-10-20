@@ -7,7 +7,8 @@
     "start": "node src/server.js",
     "seed:servicios": "node scripts/seedServicios.js",
     "seed:contenido": "node scripts/seedEditorial.js",
-    "seed:contacto": "node scripts/seedContacto.js"
+    "seed:contacto": "node scripts/seedContacto.js",
+    "seed:solicitudes": "node scripts/seedSolicitudes.js"
   },
   "keywords": [],
   "author": "",

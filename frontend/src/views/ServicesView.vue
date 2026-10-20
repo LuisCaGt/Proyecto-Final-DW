@@ -25,7 +25,7 @@ onMounted(load);
   <section v-else class="service-cards" aria-label="Servicios disponibles">
     <article v-for="item in store.publicItems" :key="item._id" class="service-card">
       <img :src="item.imagen" :alt="item.nombre" loading="lazy" referrerpolicy="no-referrer" @error="fallback">
-      <div class="service-card-body"><p class="eyebrow">{{ item.duracionMinutos }} MINUTOS</p><h2>{{ item.nombre }}</h2><p class="service-description">{{ item.descripcion }}</p><p class="service-price">{{ formatMoney(item.precioCentavos) }} <span>/ sesión</span></p><button class="button secondary" disabled>Solicitar cita</button><small>Las solicitudes en línea estarán disponibles próximamente.</small></div>
+      <div class="service-card-body"><p class="eyebrow">{{ item.duracionMinutos }} MINUTOS</p><h2>{{ item.nombre }}</h2><p class="service-description">{{ item.descripcion }}</p><p class="service-price">{{ formatMoney(item.precioCentavos) }} <span>/ sesión</span></p><RouterLink class="button secondary" :to="{ name: 'solicitar-cita', query: { servicio: item._id } }">Solicitar cita</RouterLink></div>
     </article>
   </section>
 </template>
