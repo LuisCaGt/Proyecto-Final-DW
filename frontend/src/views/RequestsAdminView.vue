@@ -1,12 +1,12 @@
 <script setup>
-import { onMounted, reactive, ref } from 'vue';
+import { nextTick, onMounted, reactive, ref } from 'vue';
 import AdminNavigation from '../components/AdminNavigation.vue';
 import { request } from '../services/api';
 const labels = { PENDIENTE: 'Pendiente', ATENDIDA: 'Atendida', RECHAZADA: 'Rechazada' };
 const filters = reactive({ buscar: '', estado: 'PENDIENTE' });
 const applied = ref({ buscar: '', estado: 'PENDIENTE' });
 const result = ref({ solicitudes: [], total: 0, pagina: 1, totalPaginas: 0 });
-const loading = ref(true), busy = ref(false), error = ref(''), notice = ref(''), selected = ref(null), motivo = ref('');
+const loading = ref(true), busy = ref(false), error = ref(''), notice = ref(''), selected = ref(null), motivo = ref(''), rejecting = ref(false), rejectDialog = ref(null);
 let loadVersion = 0;
 const formatDate = value => new Intl.DateTimeFormat('es-GT', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'America/Guatemala' }).format(new Date(value));
 const formatDay = value => new Intl.DateTimeFormat('es-GT', { dateStyle: 'full', timeZone: 'UTC' }).format(new Date(`${value}T00:00:00Z`));
@@ -20,13 +20,15 @@ async function load(page = 1) {
 }
 function search() { applied.value = { ...filters }; selected.value = null; load(1); }
 function open(item) { selected.value = item; motivo.value = ''; notice.value = ''; error.value = ''; }
+// Abre el diálogo de confirmación del rechazo.
+async function openReject() { motivo.value = ''; rejecting.value = true; await nextTick(); rejectDialog.value.showModal(); }
+function closeReject() { if (!busy.value) rejecting.value = false; }
 async function reject() {
-  if (!window.confirm('¿Rechazar esta solicitud? Esta acción no se puede deshacer.')) return;
   busy.value = true; error.value = ''; notice.value = '';
   try {
     selected.value = await request(`/solicitudes-cita/${selected.value._id}/rechazar`, { method: 'PATCH', body: JSON.stringify(motivo.value ? { motivo: motivo.value } : {}) });
-    notice.value = 'Solicitud rechazada.'; await load(result.value.pagina);
-  } catch (err) { error.value = err.message; } finally { busy.value = false; }
+    notice.value = 'Solicitud rechazada.'; rejecting.value = false; await load(result.value.pagina);
+  } catch (err) { error.value = err.message; rejecting.value = false; } finally { busy.value = false; }
 }
 onMounted(() => load());
 </script>
@@ -45,9 +47,16 @@ onMounted(() => load());
     <section class="message-detail form-panel" aria-labelledby="req-detail-title"><h2 id="req-detail-title">Detalle</h2>
       <template v-if="selected"><dl><dt>Solicitante</dt><dd>{{ selected.nombreSolicitante }}</dd><dt>Correo</dt><dd>{{ selected.correo }}</dd><dt>Teléfono</dt><dd>{{ selected.telefono }}</dd><dt>Servicio</dt><dd>{{ selected.servicio?.nombre }}</dd><dt>Fecha preferida</dt><dd>{{ formatDay(selected.fechaPreferida) }}</dd><dt>Estado</dt><dd>{{ labels[selected.estado] }}</dd><template v-if="selected.motivoRechazo"><dt>Motivo de rechazo</dt><dd>{{ selected.motivoRechazo }}</dd></template></dl>
         <p v-if="selected.mensaje" class="message-body">{{ selected.mensaje }}</p>
-        <template v-if="selected.estado === 'PENDIENTE'"><label for="req-reason">Motivo de rechazo (opcional)</label><textarea id="req-reason" v-model.trim="motivo" rows="3" maxlength="500"></textarea>
-          <div class="actions"><button class="button secondary" :disabled="busy" @click="reject">{{ busy ? 'Guardando…' : 'Rechazar' }}</button><button class="button" disabled title="Disponible al integrar pacientes y citas">Convertir en cita</button></div></template>
+        <template v-if="selected.estado === 'PENDIENTE'"><div class="actions"><button class="button secondary" :disabled="busy" @click="openReject">Rechazar solicitud</button></div>
+          <p class="dev-note">La opción para convertir la solicitud en cita se habilitará al integrar pacientes y citas.</p></template>
       </template><p v-else class="empty-state">Selecciona una solicitud para ver sus datos.</p>
     </section>
   </div>
+  <dialog v-if="rejecting" ref="rejectDialog" class="confirm-panel" aria-labelledby="reject-title" @cancel.prevent="closeReject">
+    <h2 id="reject-title">¿Rechazar solicitud?</h2>
+    <p><strong>{{ selected?.nombreSolicitante }}</strong> · {{ selected?.servicio?.nombre }}</p>
+    <p>La solicitud quedará como rechazada y no podrá convertirse en cita. Esta acción no se puede deshacer.</p>
+    <label for="req-reason">Motivo de rechazo (opcional)</label><textarea id="req-reason" v-model.trim="motivo" rows="3" maxlength="500" :disabled="busy"></textarea>
+    <div class="actions"><button class="button" :disabled="busy" @click="reject">{{ busy ? 'Guardando…' : 'Rechazar' }}</button><button class="button secondary" :disabled="busy" autofocus @click="closeReject">Cancelar</button></div>
+  </dialog>
 </template>

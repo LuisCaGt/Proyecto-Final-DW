@@ -31,11 +31,12 @@ onBeforeRouteLeave(() => !busy.value && (!dirty.value || window.confirm('Tu soli
 </script>
 
 <template>
+  <RouterLink class="text-button" to="/servicios"><span aria-hidden="true">←</span> Volver a servicios</RouterLink>
   <section class="page-heading"><p class="eyebrow">SOLICITUD DE CITA</p><h1>Solicita tu cita</h1><p class="intro">Envía tus datos y una fecha preferida. El centro te contactará para confirmar el horario; la solicitud no reserva un espacio automáticamente.</p></section>
   <p v-if="loading" class="empty-state" role="status">Cargando servicios…</p>
   <section v-else-if="error && !services.publicItems.length" class="feedback error" role="alert"><p>{{ error }}</p><button class="button secondary" @click="load">Reintentar</button></section>
   <section v-else class="form-panel" aria-labelledby="request-title"><h2 id="request-title">Datos de la solicitud</h2>
-    <p v-if="error" class="feedback error" role="alert">{{ error }}</p><p v-if="notice" class="feedback success" role="status">{{ notice }}</p>
+    <p v-if="error" class="feedback error" role="alert">{{ error }}</p><div v-if="notice" class="feedback success" role="status"><p>{{ notice }}</p><RouterLink class="button secondary" to="/servicios">Volver a servicios</RouterLink></div>
     <form @submit.prevent="send"><fieldset :disabled="busy"><legend class="sr-only">Datos del solicitante y del servicio</legend>
       <label for="req-name">Nombre del solicitante</label><input id="req-name" v-model.trim="form.nombreSolicitante" required maxlength="120" autocomplete="name" :aria-invalid="Boolean(fields.nombreSolicitante)"><small v-if="fields.nombreSolicitante" class="error">{{ fields.nombreSolicitante }}</small>
       <div class="form-row"><div><label for="req-email">Correo electrónico</label><input id="req-email" v-model.trim="form.correo" required type="email" maxlength="254" autocomplete="email" :aria-invalid="Boolean(fields.correo)"><small v-if="fields.correo" class="error">{{ fields.correo }}</small></div>
