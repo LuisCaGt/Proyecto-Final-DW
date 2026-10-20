@@ -11,10 +11,7 @@ const DAYS = ['domingos', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 
 // Valida todas las reglas de una cita y devuelve los datos calculados listos para guardar.
 // Se reutiliza al programar, reprogramar y convertir una solicitud.
 export async function prepararCita({ paciente, servicio, profesional, fecha, horaInicio }) {
-  const [pac, serv, prof, horario] = await Promise.all([
-    findPaciente(paciente), Servicio.findById(servicio).lean(), findProfesional(profesional),
-    Horario.findById('atencion').lean(),
-  ]);
+  const [pac, serv, prof] = await Promise.all([findPaciente(paciente), Servicio.findById(servicio).lean(), findProfesional(profesional)]);
   const fields = Object.create(null);
   // RN-03 y RN-14: paciente existente y activo. RN-04: menor con responsable.
   if (!pac) fields.paciente = 'El paciente no existe.';
@@ -28,24 +25,37 @@ export async function prepararCita({ paciente, servicio, profesional, fecha, hor
   else if (prof.estado !== 'ACTIVO') fields.profesional = 'El profesional está inactivo.';
   if (Object.keys(fields).length) fail('No se puede programar la cita.', fields);
 
-  // RN-12: la hora de finalización se calcula con la duración del servicio.
-  const { hora: horaFin, mismoDia } = addMinutes(horaInicio, serv.duracionMinutos);
-  const inicio = toDate(fecha, horaInicio), fin = toDate(fecha, horaFin);
-
-  // RN-11: no se permiten fechas u horas pasadas.
-  if (fecha < todayInGuatemala() || inicio <= new Date()) fail('No se puede programar la cita.', { horaInicio: 'La fecha y hora ya pasaron.' });
-
-  // RN-02: la cita completa debe caber dentro del horario de atención del día.
-  const dia = (horario?.dias || initialHours).find(item => item.dia === dayOfWeek(fecha));
-  if (!dia?.abierto) fail('No se puede programar la cita.', { fecha: `El centro no atiende los ${DAYS[dayOfWeek(fecha)]}.` });
-  if (horaInicio < dia.inicio) fail('No se puede programar la cita.', { horaInicio: `El centro abre a las ${dia.inicio} ese día.` });
-  if (!mismoDia || horaFin > dia.fin) fail('No se puede programar la cita.', { horaInicio: `Con ${serv.duracionMinutos} minutos de duración la cita terminaría a las ${horaFin}; el horario de ese día es de ${dia.inicio} a ${dia.fin}.` });
-
+  const horario = await calcularHorario({ fecha, horaInicio, duracionMinutos: serv.duracionMinutos });
   return {
-    paciente, servicio, profesional, fecha, horaInicio, horaFin, inicio, fin,
+    paciente, servicio, profesional, fecha, ...horario,
     // RF-07: duración y precio se copian del servicio en este momento.
     duracionMinutos: serv.duracionMinutos, precioCentavos: serv.precioCentavos,
   };
+}
+
+// RN-02, RN-11 y RN-12: calcula la hora de fin y verifica que la cita sea futura y quepa en el horario de atención.
+export async function calcularHorario({ fecha, horaInicio, duracionMinutos }) {
+  const horario = await Horario.findById('atencion').lean();
+  const { hora: horaFin, mismoDia } = addMinutes(horaInicio, duracionMinutos);
+  const inicio = toDate(fecha, horaInicio), fin = toDate(fecha, horaFin);
+  if (fecha < todayInGuatemala() || inicio <= new Date()) fail('No se puede programar la cita.', { horaInicio: 'La fecha y hora ya pasaron.' });
+  const dia = (horario?.dias || initialHours).find(item => item.dia === dayOfWeek(fecha));
+  if (!dia?.abierto) fail('No se puede programar la cita.', { fecha: `El centro no atiende los ${DAYS[dayOfWeek(fecha)]}.` });
+  if (horaInicio < dia.inicio) fail('No se puede programar la cita.', { horaInicio: `El centro abre a las ${dia.inicio} ese día.` });
+  if (!mismoDia || horaFin > dia.fin) fail('No se puede programar la cita.', { horaInicio: `Con ${duracionMinutos} minutos de duración la cita terminaría a las ${horaFin}; el horario de ese día es de ${dia.inicio} a ${dia.fin}.` });
+  return { horaInicio, horaFin, inicio, fin };
+}
+
+// Reprogramar: conserva servicio, duración y precio originales; valida profesional, paciente y nuevo horario.
+export async function prepararReprogramacion(cita, { profesional, fecha, horaInicio }) {
+  const [pac, prof] = await Promise.all([findPaciente(cita.paciente), findProfesional(profesional)]);
+  const fields = Object.create(null);
+  if (!pac || pac.estado !== 'ACTIVO') fields.paciente = 'El paciente está inactivo y no puede recibir citas.';
+  if (!prof) fields.profesional = 'El profesional no existe.';
+  else if (prof.estado !== 'ACTIVO') fields.profesional = 'El profesional está inactivo.';
+  if (Object.keys(fields).length) fail('No se puede reprogramar la cita.', fields);
+  const horario = await calcularHorario({ fecha, horaInicio, duracionMinutos: cita.duracionMinutos });
+  return { profesional, fecha, ...horario };
 }
 
 // RN-01 y RN-13: busca citas activas del mismo profesional que se crucen con el intervalo.

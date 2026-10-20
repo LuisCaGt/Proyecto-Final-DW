@@ -9,7 +9,8 @@
     "seed:contenido": "node scripts/seedEditorial.js",
     "seed:contacto": "node scripts/seedContacto.js",
     "seed:solicitudes": "node scripts/seedSolicitudes.js",
-    "seed:agenda-provisional": "node scripts/seedAgendaProvisional.js"
+    "seed:agenda-provisional": "node scripts/seedAgendaProvisional.js",
+    "seed:citas": "node scripts/seedCitas.js"
   },
   "keywords": [],
   "author": "",

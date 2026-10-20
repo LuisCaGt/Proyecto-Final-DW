@@ -10,3 +10,5 @@ citasRouter.get('/opciones', controller.options);
 citasRouter.get('/', controller.list);
 citasRouter.post('/', controller.create);
 citasRouter.get('/:id', controller.getOne);
+citasRouter.put('/:id', controller.update);
+citasRouter.patch('/:id/estado', controller.changeState);
