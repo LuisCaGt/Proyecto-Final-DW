@@ -7,6 +7,7 @@ import { horariosRouter } from './routes/horariosRoutes.js';
 import { contenidoRouter } from './routes/contenidoRoutes.js';
 import { serviciosRouter, serviciosAdminRouter } from './routes/serviciosRoutes.js';
 import { solicitudesRouter } from './routes/solicitudesRoutes.js';
+import { citasRouter } from './routes/citasRoutes.js';
 
 export const app = express();
 app.disable('x-powered-by');
@@ -34,6 +35,7 @@ app.use('/api/contenido', contenidoRouter);
 app.use('/api/servicios', serviciosRouter);
 app.use('/api/admin/servicios', serviciosAdminRouter);
 app.use('/api/solicitudes-cita', solicitudesRouter);
+app.use('/api/citas', citasRouter);
 
 app.use((req, res) => res.status(404).json({ message: 'Ruta no encontrada' }));
 app.use((error, req, res, next) => {

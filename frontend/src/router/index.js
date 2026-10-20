@@ -22,6 +22,7 @@ export default createRouter({
     { path: '/contacto', name: 'contacto', component: () => import('../views/ContactView.vue') },
     { path: '/admin/contacto', name: 'admin-contacto', component: () => import('../views/ContactAdminView.vue') },
     { path: '/solicitar-cita', name: 'solicitar-cita', component: () => import('../views/AppointmentRequestView.vue') },
+    { path: '/admin/citas', name: 'admin-citas', component: () => import('../views/AppointmentsAdminView.vue') },
     { path: '/admin/solicitudes', name: 'admin-solicitudes', component: () => import('../views/RequestsAdminView.vue') },
     { path: '/admin/mensajes', name: 'admin-mensajes', component: () => import('../views/MessagesAdminView.vue') },
     { path: '/:pathMatch(.*)*', component: NotFoundView },

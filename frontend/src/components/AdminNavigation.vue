@@ -9,5 +9,6 @@
     <RouterLink to="/admin/contacto">Contacto</RouterLink>
     <RouterLink to="/admin/mensajes">Mensajes</RouterLink>
     <RouterLink to="/admin/solicitudes">Solicitudes de cita</RouterLink>
+    <RouterLink to="/admin/citas">Citas</RouterLink>
   </nav>
 </template>
