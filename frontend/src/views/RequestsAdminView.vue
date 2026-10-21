@@ -70,7 +70,6 @@ onMounted(() => load());
 
 <template>
   <section class="page-heading"><p class="eyebrow">ADMINISTRACIÓN</p><h1>Solicitudes de cita</h1><p class="intro">Revisa las solicitudes enviadas desde el portal y conviértelas en citas o recházalas.</p></section><AdminNavigation />
-  <p class="dev-note">Acceso temporal de desarrollo. Al integrar usuarios quedará disponible para ADMINISTRADOR y RECEPCIONISTA.</p>
   <p v-if="error" class="feedback error" role="alert">{{ error }}</p><p v-if="notice" class="feedback success" role="status">{{ notice }}</p>
   <form class="inbox-filters" @submit.prevent="search"><div><label for="req-search">Nombre, correo o teléfono</label><input id="req-search" v-model.trim="filters.buscar" type="search" maxlength="120"></div><div><label for="req-state">Estado</label><select id="req-state" v-model="filters.estado"><option value="">Todos</option><option v-for="(label, key) in labels" :key="key" :value="key">{{ label }}</option></select></div><button class="button secondary" :disabled="loading || busy">Buscar</button></form>
   <div class="inbox-grid">
@@ -96,7 +95,6 @@ onMounted(() => load());
   <dialog v-if="converting" ref="convertDialog" class="confirm-panel convert-dialog" aria-labelledby="convert-title" @cancel.prevent="closeConvert">
     <h2 id="convert-title">Convertir en cita</h2>
     <p>Solicitud de <strong>{{ selected?.nombreSolicitante }}</strong> · prefiere el {{ formatDay(selected?.fechaPreferida) }}.</p>
-    <p class="dev-note">La cita debe asociarse a un paciente registrado. Si el solicitante aún no es paciente, regístralo primero.</p>
     <p v-if="convertError" class="feedback error" role="alert">{{ convertError }}</p>
     <form @submit.prevent="convert"><fieldset :disabled="busy"><legend class="sr-only">Datos de la cita</legend>
       <label for="cv-patient">Paciente</label><select id="cv-patient" v-model="convertForm.paciente" required><option value="" disabled>Selecciona un paciente</option><option v-for="item in activePatients" :key="item._id" :value="item._id">{{ fullName(item) }}</option></select><small v-if="convertFields.paciente" class="error">{{ convertFields.paciente }}</small>

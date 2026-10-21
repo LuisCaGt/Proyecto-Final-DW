@@ -7,6 +7,8 @@ import esLocale from '@fullcalendar/core/locales/es';
 import AdminNavigation from '../components/AdminNavigation.vue';
 import { request } from '../services/api';
 import { formatMoney } from '../utils/money';
+import { useAuthStore } from '../stores/auth';
+const auth = useAuthStore();
 
 const labels = { PENDIENTE: 'Pendiente', CONFIRMADA: 'Confirmada', COMPLETADA: 'Completada', CANCELADA: 'Cancelada' };
 const colors = { PENDIENTE: '#b7832f', CONFIRMADA: '#2d6a9f', COMPLETADA: '#3f7a4f', CANCELADA: '#8a8a8a' };
@@ -83,10 +85,10 @@ onMounted(async () => {
           <dt>Fecha</dt><dd>{{ formatDay(selected.fecha) }}</dd>
           <dt>Horario</dt><dd>{{ selected.horaInicio }} – {{ selected.horaFin }}</dd>
           <dt>Estado</dt><dd><span class="state" :style="{ background: colors[selected.estado] }">{{ labels[selected.estado] }}</span></dd>
-          <dt>Precio</dt><dd>{{ formatMoney(selected.precioCentavos) }}</dd>
+          <template v-if="auth.canManagePeople"><dt>Precio</dt><dd>{{ formatMoney(selected.precioCentavos) }}</dd></template>
           <template v-if="selected.observaciones"><dt>Observaciones</dt><dd>{{ selected.observaciones }}</dd></template>
         </dl>
-        <RouterLink class="button secondary" to="/admin/citas">Gestionar en Citas</RouterLink>
+        <RouterLink v-if="auth.canManagePeople" class="button secondary" to="/admin/citas">Gestionar en Citas</RouterLink>
       </template>
       <template v-else>
         <h2 id="day-title">{{ formatDay(selectedDate) }}</h2>
