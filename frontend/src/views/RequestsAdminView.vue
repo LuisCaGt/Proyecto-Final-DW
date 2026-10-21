@@ -1,7 +1,8 @@
 <script setup>
-import { nextTick, onMounted, reactive, ref } from 'vue';
+import { computed, nextTick, onMounted, reactive, ref } from 'vue';
 import AdminNavigation from '../components/AdminNavigation.vue';
 import { request } from '../services/api';
+import { formatMoney } from '../utils/money';
 const labels = { PENDIENTE: 'Pendiente', ATENDIDA: 'Atendida', RECHAZADA: 'Rechazada' };
 const filters = reactive({ buscar: '', estado: 'PENDIENTE' });
 const applied = ref({ buscar: '', estado: 'PENDIENTE' });
@@ -30,6 +31,40 @@ async function reject() {
     notice.value = 'Solicitud rechazada.'; rejecting.value = false; await load(result.value.pagina);
   } catch (err) { error.value = err.message; rejecting.value = false; } finally { busy.value = false; }
 }
+// Convertir en cita
+const appointmentLabels = { PENDIENTE: 'Pendiente', CONFIRMADA: 'Confirmada', COMPLETADA: 'Completada', CANCELADA: 'Cancelada' };
+const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Guatemala' }).format(new Date());
+const fullName = person => `${person.nombres} ${person.apellidos}`;
+const options = ref(null), converting = ref(false), convertDialog = ref(null), convertError = ref(''), convertFields = ref({});
+const convertForm = reactive({ paciente: '', servicio: '', profesional: '', fecha: '', horaInicio: '', observaciones: '' });
+const activePatients = computed(() => options.value?.pacientes.filter(item => item.estado === 'ACTIVO') || []);
+const activeProfessionals = computed(() => options.value?.profesionales.filter(item => item.estado === 'ACTIVO') || []);
+const convertService = computed(() => options.value?.servicios.find(item => item._id === convertForm.servicio));
+const convertHours = computed(() => convertForm.fecha && options.value ? options.value.horario.find(day => day.dia === new Date(`${convertForm.fecha}T12:00:00Z`).getUTCDay()) : null);
+async function openConvert() {
+  convertError.value = ''; convertFields.value = {};
+  try { if (!options.value) options.value = await request('/citas/opciones'); }
+  catch (err) { error.value = err.message; return; }
+  const sol = selected.value;
+  // Precarga lo que pidió el solicitante; la recepcionista ajusta lo necesario.
+  Object.assign(convertForm, {
+    paciente: '', profesional: '', horaInicio: '',
+    servicio: options.value.servicios.some(item => item._id === sol.servicio?._id) ? sol.servicio._id : '',
+    fecha: sol.fechaPreferida >= today ? sol.fechaPreferida : today,
+    observaciones: sol.mensaje ? `Solicitud: ${sol.mensaje}` : '',
+  });
+  converting.value = true; await nextTick(); convertDialog.value.showModal();
+}
+function closeConvert() { if (!busy.value) converting.value = false; }
+async function convert() {
+  busy.value = true; convertError.value = ''; convertFields.value = {};
+  try {
+    selected.value = await request(`/solicitudes-cita/${selected.value._id}/convertir`, { method: 'POST', body: JSON.stringify(convertForm) });
+    converting.value = false;
+    notice.value = `Cita programada para el ${formatDay(selected.value.cita.fecha)} de ${selected.value.cita.horaInicio} a ${selected.value.cita.horaFin}.`;
+    await load(result.value.pagina);
+  } catch (err) { convertError.value = err.message; convertFields.value = err.fields || {}; } finally { busy.value = false; }
+}
 onMounted(() => load());
 </script>
 
@@ -45,10 +80,9 @@ onMounted(() => load());
       <div v-if="result.totalPaginas > 1" class="pagination"><button class="button secondary" :disabled="result.pagina <= 1 || busy" @click="load(result.pagina - 1)">Anterior</button><span>{{ result.pagina }} / {{ result.totalPaginas }}</span><button class="button secondary" :disabled="result.pagina >= result.totalPaginas || busy" @click="load(result.pagina + 1)">Siguiente</button></div>
     </template></section>
     <section class="message-detail form-panel" aria-labelledby="req-detail-title"><h2 id="req-detail-title">Detalle</h2>
-      <template v-if="selected"><dl><dt>Solicitante</dt><dd>{{ selected.nombreSolicitante }}</dd><dt>Correo</dt><dd>{{ selected.correo }}</dd><dt>Teléfono</dt><dd>{{ selected.telefono }}</dd><dt>Servicio</dt><dd>{{ selected.servicio?.nombre }}</dd><dt>Fecha preferida</dt><dd>{{ formatDay(selected.fechaPreferida) }}</dd><dt>Estado</dt><dd>{{ labels[selected.estado] }}</dd><template v-if="selected.motivoRechazo"><dt>Motivo de rechazo</dt><dd>{{ selected.motivoRechazo }}</dd></template></dl>
+      <template v-if="selected"><dl><dt>Solicitante</dt><dd>{{ selected.nombreSolicitante }}</dd><dt>Correo</dt><dd>{{ selected.correo }}</dd><dt>Teléfono</dt><dd>{{ selected.telefono }}</dd><dt>Servicio</dt><dd>{{ selected.servicio?.nombre }}</dd><dt>Fecha preferida</dt><dd>{{ formatDay(selected.fechaPreferida) }}</dd><dt>Estado</dt><dd>{{ labels[selected.estado] }}</dd><template v-if="selected.motivoRechazo"><dt>Motivo de rechazo</dt><dd>{{ selected.motivoRechazo }}</dd></template><template v-if="selected.cita"><dt>Cita generada</dt><dd>{{ formatDay(selected.cita.fecha) }}, {{ selected.cita.horaInicio }} – {{ selected.cita.horaFin }} · {{ appointmentLabels[selected.cita.estado] }} <RouterLink to="/admin/citas">Ver en citas →</RouterLink></dd></template></dl>
         <p v-if="selected.mensaje" class="message-body">{{ selected.mensaje }}</p>
-        <template v-if="selected.estado === 'PENDIENTE'"><div class="actions"><button class="button secondary" :disabled="busy" @click="openReject">Rechazar solicitud</button></div>
-          <p class="dev-note">La opción para convertir la solicitud en cita se habilitará al integrar pacientes y citas.</p></template>
+        <div v-if="selected.estado === 'PENDIENTE'" class="actions"><button class="button" :disabled="busy" @click="openConvert">Convertir en cita</button><button class="button secondary" :disabled="busy" @click="openReject">Rechazar solicitud</button></div>
       </template><p v-else class="empty-state">Selecciona una solicitud para ver sus datos.</p>
     </section>
   </div>
@@ -59,4 +93,27 @@ onMounted(() => load());
     <label for="req-reason">Motivo de rechazo (opcional)</label><textarea id="req-reason" v-model.trim="motivo" rows="3" maxlength="500" :disabled="busy"></textarea>
     <div class="actions"><button class="button" :disabled="busy" @click="reject">{{ busy ? 'Guardando…' : 'Rechazar' }}</button><button class="button secondary" :disabled="busy" autofocus @click="closeReject">Cancelar</button></div>
   </dialog>
+  <dialog v-if="converting" ref="convertDialog" class="confirm-panel convert-dialog" aria-labelledby="convert-title" @cancel.prevent="closeConvert">
+    <h2 id="convert-title">Convertir en cita</h2>
+    <p>Solicitud de <strong>{{ selected?.nombreSolicitante }}</strong> · prefiere el {{ formatDay(selected?.fechaPreferida) }}.</p>
+    <p class="dev-note">La cita debe asociarse a un paciente registrado. Si el solicitante aún no es paciente, regístralo primero.</p>
+    <p v-if="convertError" class="feedback error" role="alert">{{ convertError }}</p>
+    <form @submit.prevent="convert"><fieldset :disabled="busy"><legend class="sr-only">Datos de la cita</legend>
+      <label for="cv-patient">Paciente</label><select id="cv-patient" v-model="convertForm.paciente" required><option value="" disabled>Selecciona un paciente</option><option v-for="item in activePatients" :key="item._id" :value="item._id">{{ fullName(item) }}</option></select><small v-if="convertFields.paciente" class="error">{{ convertFields.paciente }}</small>
+      <div class="form-row">
+        <div><label for="cv-service">Servicio</label><select id="cv-service" v-model="convertForm.servicio" required><option value="" disabled>Selecciona un servicio</option><option v-for="item in options.servicios" :key="item._id" :value="item._id">{{ item.nombre }}</option></select><small v-if="convertService">{{ convertService.duracionMinutos }} min · {{ formatMoney(convertService.precioCentavos) }}</small><small v-if="convertFields.servicio" class="error">{{ convertFields.servicio }}</small></div>
+        <div><label for="cv-professional">Profesional</label><select id="cv-professional" v-model="convertForm.profesional" required><option value="" disabled>Selecciona un profesional</option><option v-for="item in activeProfessionals" :key="item._id" :value="item._id">{{ fullName(item) }}</option></select><small v-if="convertFields.profesional" class="error">{{ convertFields.profesional }}</small></div>
+      </div>
+      <div class="form-row">
+        <div><label for="cv-date">Fecha</label><input id="cv-date" v-model="convertForm.fecha" type="date" required :min="today"><small v-if="convertHours">{{ convertHours.abierto ? `Atención de ${convertHours.inicio} a ${convertHours.fin}` : 'El centro no atiende este día' }}</small><small v-if="convertFields.fecha" class="error">{{ convertFields.fecha }}</small></div>
+        <div><label for="cv-start">Hora de inicio</label><input id="cv-start" v-model="convertForm.horaInicio" type="time" required step="300"><small v-if="convertFields.horaInicio" class="error">{{ convertFields.horaInicio }}</small></div>
+      </div>
+      <label for="cv-notes">Observaciones administrativas</label><textarea id="cv-notes" v-model.trim="convertForm.observaciones" rows="3" maxlength="2000"></textarea>
+      <div class="actions"><button class="button">{{ busy ? 'Guardando…' : 'Programar cita' }}</button><button type="button" class="button secondary" autofocus @click="closeConvert">Cancelar</button></div>
+    </fieldset></form>
+  </dialog>
 </template>
+
+<style scoped>
+.convert-dialog{max-width:600px}
+</style>

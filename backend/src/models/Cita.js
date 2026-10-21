@@ -37,5 +37,7 @@ const schema = new mongoose.Schema({
 schema.index({ profesional: 1, inicio: 1, fin: 1 });
 schema.index({ paciente: 1, inicio: -1 });
 schema.index({ fecha: 1, estado: 1 });
+// Una solicitud solo puede generar una cita, aunque dos personas la conviertan al mismo tiempo.
+schema.index({ solicitud: 1 }, { unique: true, partialFilterExpression: { solicitud: { $type: 'objectId' } } });
 
 export const Cita = mongoose.model('Cita', schema);

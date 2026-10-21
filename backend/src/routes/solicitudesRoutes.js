@@ -8,3 +8,4 @@ solicitudesRouter.post('/', controller.create);
 solicitudesRouter.get('/', developmentAdmin, controller.list);
 solicitudesRouter.get('/:id', developmentAdmin, controller.getOne);
 solicitudesRouter.patch('/:id/rechazar', developmentAdmin, controller.reject);
+solicitudesRouter.post('/:id/convertir', developmentAdmin, controller.convert);
