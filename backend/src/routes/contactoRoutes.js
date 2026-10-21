@@ -1,8 +1,9 @@
 import { Router } from 'express';
 import { createMessage, getMessage, listMessages, setMessageState } from '../controllers/contactoController.js';
-import { developmentAdmin } from '../middleware/developmentAdmin.js';
+import { requireAuth, authorizeRoles } from '../middleware/auth.js';
+const adminOnly = [requireAuth, authorizeRoles('ADMINISTRADOR')];
 export const contactoRouter = Router();
 contactoRouter.post('/', createMessage);
-contactoRouter.get('/', developmentAdmin, listMessages);
-contactoRouter.get('/:id', developmentAdmin, getMessage);
-contactoRouter.patch('/:id/estado', developmentAdmin, setMessageState);
+contactoRouter.get('/', adminOnly, listMessages);
+contactoRouter.get('/:id', adminOnly, getMessage);
+contactoRouter.patch('/:id/estado', adminOnly, setMessageState);

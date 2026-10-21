@@ -1,15 +1,14 @@
 import { Router } from 'express';
 import * as controller from '../controllers/citasController.js';
-import { developmentAdmin } from '../middleware/developmentAdmin.js';
+import { requireAuth, authorizeRoles } from '../middleware/auth.js';
 
-// TODO integración compañero 2: reemplazar developmentAdmin por JWT + roles
-// (ADMINISTRADOR y RECEPCIONISTA programan; PROFESIONAL solo consulta sus citas).
+const manage = authorizeRoles('ADMINISTRADOR', 'RECEPCIONISTA');
 export const citasRouter = Router();
-citasRouter.use(developmentAdmin);
+citasRouter.use(requireAuth, authorizeRoles('ADMINISTRADOR', 'RECEPCIONISTA', 'PROFESIONAL'));
 citasRouter.get('/opciones', controller.options);
 citasRouter.get('/calendario', controller.calendar);
 citasRouter.get('/', controller.list);
-citasRouter.post('/', controller.create);
+citasRouter.post('/', manage, controller.create);
 citasRouter.get('/:id', controller.getOne);
-citasRouter.put('/:id', controller.update);
-citasRouter.patch('/:id/estado', controller.changeState);
+citasRouter.put('/:id', manage, controller.update);
+citasRouter.patch('/:id/estado', manage, controller.changeState);

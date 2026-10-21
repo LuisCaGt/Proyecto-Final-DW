@@ -1,11 +1,11 @@
 import { Router } from 'express';
 import * as controller from '../controllers/solicitudesController.js';
-import { developmentAdmin } from '../middleware/developmentAdmin.js';
+import { requireAuth, authorizeRoles } from '../middleware/auth.js';
 
-// TODO integración compañero 2: reemplazar developmentAdmin por autenticación JWT + roles ADMINISTRADOR y RECEPCIONISTA.
 export const solicitudesRouter = Router();
 solicitudesRouter.post('/', controller.create);
-solicitudesRouter.get('/', developmentAdmin, controller.list);
-solicitudesRouter.get('/:id', developmentAdmin, controller.getOne);
-solicitudesRouter.patch('/:id/rechazar', developmentAdmin, controller.reject);
-solicitudesRouter.post('/:id/convertir', developmentAdmin, controller.convert);
+solicitudesRouter.use(requireAuth, authorizeRoles('ADMINISTRADOR', 'RECEPCIONISTA'));
+solicitudesRouter.get('/', controller.list);
+solicitudesRouter.get('/:id', controller.getOne);
+solicitudesRouter.patch('/:id/rechazar', controller.reject);
+solicitudesRouter.post('/:id/convertir', controller.convert);
