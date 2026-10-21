@@ -2,8 +2,10 @@ import 'dotenv/config';
 import mongoose from 'mongoose';
 import { app } from './app.js';
 import { connectDatabase } from './config/database.js';
+import { validateJwtSecret } from './utils/security.js';
 
 try {
+  validateJwtSecret();
   await connectDatabase();
   const server = app.listen(process.env.PORT || 3000, '127.0.0.1', () => console.log('API SIGCA lista'));
   async function shutdown() {

@@ -1,3 +1,7 @@
+import { authRouter } from './routes/authRoutes.js';
+import { usuariosRouter, profesionalesRouter } from './routes/usuariosRoutes.js';
+import { pacientesRouter } from './routes/pacientesRoutes.js';
+import { responsablesRouter } from './routes/responsablesRoutes.js';
 import express from 'express';
 import cors from 'cors';
 import mongoose from 'mongoose';
@@ -22,6 +26,12 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+app.use('/api/auth', authRouter);
+app.use('/api/usuarios', usuariosRouter);
+app.use('/api/profesionales', profesionalesRouter);
+app.use('/api/pacientes', pacientesRouter);
+app.use('/api/responsables', responsablesRouter);
+
 const publications = editorialRoutes(true);
 const activities = editorialRoutes(false);
 app.use('/api/publicaciones', publications.publicRouter);
@@ -39,6 +49,7 @@ app.use('/api/citas', citasRouter);
 
 app.use((req, res) => res.status(404).json({ message: 'Ruta no encontrada' }));
 app.use((error, req, res, next) => {
+  if (error.code === 11000) return res.status(409).json({ message: 'Ya existe un registro con ese identificador o correo.' });
   const invalidJson = error.type === 'entity.parse.failed';
   const tooLarge = error.type === 'entity.too.large';
   const status = invalidJson ? 400 : tooLarge ? 413 : error.status || (error.name === 'ValidationError' ? 400 : 500);
