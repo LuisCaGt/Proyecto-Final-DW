@@ -10,7 +10,8 @@
     "seed:contacto": "node scripts/seedContacto.js",
     "seed:solicitudes": "node scripts/seedSolicitudes.js",
     "seed:agenda-provisional": "node scripts/seedAgendaProvisional.js",
-    "seed:citas": "node scripts/seedCitas.js"
+    "seed:citas": "node scripts/seedCitas.js",
+    "seed:modulo-citas": "npm run seed:servicios && npm run seed:solicitudes && npm run seed:agenda-provisional && npm run seed:citas"
   },
   "keywords": [],
   "author": "",

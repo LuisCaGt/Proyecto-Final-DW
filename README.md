@@ -18,7 +18,11 @@ Sistema Integral de Gestión de Citas y Atención, una aplicación web académic
 - Administración de servicios: registro, edición, búsqueda, filtros y cambio de estado.
 - Precio en centavos enteros y eliminación lógica mediante estado INACTIVO.
 
-La autenticación, los pacientes y las citas están pendientes. El acceso administrativo actual es únicamente para desarrollo local. El botón de solicitud de cita permanece deshabilitado hasta integrar ese módulo.
+- Solicitudes de cita desde el portal, bandeja administrativa, rechazo y conversión en cita.
+- Citas: programación con reglas de agenda, confirmación, reprogramación, cancelación, completado, historial por paciente y filtros.
+- Calendario mensual de citas con FullCalendar.
+
+La autenticación y los módulos completos de usuarios y pacientes están pendientes; el módulo de citas usa modelos provisionales de `Paciente` y `Usuario` (ver más abajo). El acceso administrativo actual es únicamente para desarrollo local.
 
 ## Requisitos
 
@@ -144,7 +148,7 @@ Ejemplo de registro:
 
 `precioCentavos: 25000` representa Q250.00. La API requiere un número entero, entre 0 y 99999999 centavos. La duración debe ser un entero de 1 a 1440 minutos. La imagen admite una URL HTTP/HTTPS o un recurso local en `/images/`.
 
-El frontend incluye una ilustración de respaldo si la imagen no carga. No hay eliminación física de servicios. Las citas deberán copiar la duración y el precio vigentes al momento de programarse; ese módulo todavía está pendiente.
+El frontend incluye una ilustración de respaldo si la imagen no carga. No hay eliminación física de servicios. Las citas copian la duración y el precio vigentes al momento de programarse, por lo que un cambio posterior de precio no afecta las citas existentes.
 
 ### Pruebas manuales
 
@@ -284,6 +288,52 @@ npm run seed:contacto
 Genera dos mensajes ficticios, uno nuevo y otro leído, y conserva los mensajes existentes que tengan el mismo correo y asunto. El formulario funciona aunque no se ejecute este script.
 
 Importa `docs/SIGCA-contacto.postman_collection.json`. Verifica registro público (201), rechazo de campos inválidos (400), listado, consulta del detalle, cambio de estado y paginación. Deshabilitar `ENABLE_DEV_ADMIN` debe bloquear listado, detalle, cambios de estado y edición del centro con 403, manteniendo disponible el envío público. La integración definitiva deberá autorizar la consulta de mensajes para ADMINISTRADOR.
+
+## Solicitudes de cita, citas y calendario
+
+### Pantallas
+
+- `/servicios` → botón **Solicitar cita**: abre `/solicitar-cita` con el servicio elegido.
+- `/admin/solicitudes`: bandeja de solicitudes; rechazar o convertir en cita.
+- `/admin/citas`: programar citas, agenda con filtros, detalle con confirmar, reprogramar, cancelar, completar e historial del paciente.
+- `/admin/calendario`: calendario mensual; clic en un día para ver sus citas y en una cita para ver su detalle.
+
+### Datos de demostración
+
+Desde `backend/`, con `ENABLE_DEV_ADMIN=true`:
+
+```bash
+npm run seed:modulo-citas
+```
+
+Ejecuta en orden `seed:servicios`, `seed:solicitudes`, `seed:agenda-provisional` y `seed:citas`. Carga 6 solicitudes (pendientes, una rechazada y una atendida con su cita), 4 profesionales (uno inactivo), 5 pacientes (un menor con responsable, un menor sin responsable y un inactivo) y 15 citas pasadas y futuras en todos los estados. Repetir los comandos el mismo día no duplica datos; las fechas de las citas son relativas al día en que se ejecuta.
+
+### Modelos provisionales
+
+`backend/src/models/Paciente.js`, `backend/src/models/Usuario.js` y `scripts/seedAgendaProvisional.js` existen solo para probar citas mientras se integran los módulos de pacientes y usuarios. Al integrarlos, se reemplazan esos archivos; si los campos cambian, solo se ajusta `backend/src/services/dependenciasCitas.js`. La regla RN-27 (no cancelar citas con pagos válidos) está en `backend/src/services/pagosCitas.js` y se activa sola cuando exista el modelo `Pago` con los campos `cita` y `estado`.
+
+### Endpoints
+
+| Método | Ruta | Función |
+| --- | --- | --- |
+| POST | /api/solicitudes-cita | Enviar solicitud; pública |
+| GET | /api/solicitudes-cita | Listar con filtros `estado`, `buscar`, `pagina`, `limite` |
+| GET | /api/solicitudes-cita/:id | Detalle, con la cita generada si fue atendida |
+| PATCH | /api/solicitudes-cita/:id/rechazar | Rechazar una solicitud pendiente |
+| POST | /api/solicitudes-cita/:id/convertir | Crear la cita y marcar la solicitud ATENDIDA |
+| GET | /api/citas/opciones | Pacientes, profesionales, servicios y horario para formularios |
+| GET | /api/citas | Listar con filtros `paciente`, `profesional`, `estado`, `desde`, `hasta` |
+| GET | /api/citas/calendario | Citas de un rango (`desde`, `hasta`, máximo 62 días) |
+| GET | /api/citas/:id | Detalle |
+| POST | /api/citas | Programar |
+| PUT | /api/citas/:id | Reprogramar profesional, fecha y hora; editar observaciones |
+| PATCH | /api/citas/:id/estado | Confirmar, completar o cancelar |
+
+Reglas aplicadas en el backend: RN-01 a RN-07, RN-11 a RN-14, RN-27 (preparada) y RN-30. Los cambios de estado permitidos son PENDIENTE → CONFIRMADA o CANCELADA, y CONFIRMADA → COMPLETADA o CANCELADA; COMPLETADA y CANCELADA son finales. Una cita solo se completa cuando ya inició. Reprogramar conserva servicio, duración y precio, y devuelve la cita a PENDIENTE. Un bloqueo por profesional (`bloqueosAgenda`) evita traslapes cuando dos personas programan al mismo tiempo.
+
+### Pruebas
+
+Importa `docs/SIGCA-solicitudes-citas.postman_collection.json` y ejecútala completa con el Collection Runner. La primera petición calcula las fechas y obtiene los identificadores de los datos de demostración; cada ejecución usa una fecha futura distinta.
 
 ## Referencias
 

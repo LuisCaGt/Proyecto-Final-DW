@@ -1,0 +1,1259 @@
+{
+  "info": {
+    "name": "SIGCA — Solicitudes de cita, citas y calendario",
+    "description": "Pruebas de RF-06, RF-07 y RF-08 con sus reglas de negocio. Requiere ENABLE_DEV_ADMIN=true y los datos de `npm run seed:modulo-citas`. Ejecuta la colección completa en orden con el Collection Runner: cada ejecución usa una fecha futura aleatoria para no chocar con las anteriores.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000"
+    },
+    {
+      "key": "hoy",
+      "value": ""
+    },
+    {
+      "key": "ayer",
+      "value": ""
+    },
+    {
+      "key": "fechaFutura",
+      "value": ""
+    },
+    {
+      "key": "fechaDomingo",
+      "value": ""
+    },
+    {
+      "key": "finMes",
+      "value": ""
+    },
+    {
+      "key": "pacienteAdultoId",
+      "value": ""
+    },
+    {
+      "key": "pacienteMenorSinRespId",
+      "value": ""
+    },
+    {
+      "key": "pacienteInactivoId",
+      "value": ""
+    },
+    {
+      "key": "profesionalId",
+      "value": ""
+    },
+    {
+      "key": "profesional2Id",
+      "value": ""
+    },
+    {
+      "key": "profesionalInactivoId",
+      "value": ""
+    },
+    {
+      "key": "servicioId",
+      "value": ""
+    },
+    {
+      "key": "servicioPrecio",
+      "value": ""
+    },
+    {
+      "key": "solicitudId",
+      "value": ""
+    },
+    {
+      "key": "solicitudRechazoId",
+      "value": ""
+    },
+    {
+      "key": "citaId",
+      "value": ""
+    },
+    {
+      "key": "citaPasadaId",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Datos de apoyo",
+      "item": [
+        {
+          "name": "Opciones (pacientes, profesionales, servicios, horario)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/citas/opciones"
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Fechas calculadas en cada ejecución (hora de Guatemala, UTC-6).",
+                  "const hoy = new Date(Date.now() - 6 * 3600000).toISOString().slice(0, 10);",
+                  "const mover = (f, n) => { const d = new Date(f + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };",
+                  "const dia = f => new Date(f + 'T12:00:00Z').getUTCDay();",
+                  "// Día hábil aleatorio entre 60 y 400 días adelante para no chocar con ejecuciones anteriores.",
+                  "let futura = mover(hoy, 60 + Math.floor(Math.random() * 340));",
+                  "while (dia(futura) === 0 || dia(futura) === 6) futura = mover(futura, 1);",
+                  "let domingo = mover(hoy, 1); while (dia(domingo) !== 0) domingo = mover(domingo, 1);",
+                  "pm.collectionVariables.set('hoy', hoy);",
+                  "pm.collectionVariables.set('ayer', mover(hoy, -1));",
+                  "pm.collectionVariables.set('fechaFutura', futura);",
+                  "pm.collectionVariables.set('fechaDomingo', domingo);",
+                  "pm.collectionVariables.set('finMes', mover(hoy, 30));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "const nombre = p => p.nombres + ' ' + p.apellidos;",
+                  "const pac = n => (j.pacientes.find(p => nombre(p) === n) || {})._id || '';",
+                  "const prof = n => (j.profesionales.find(p => nombre(p) === n) || {})._id || '';",
+                  "const serv = j.servicios.find(s => s.nombre === 'Atención psicológica') || {};",
+                  "pm.collectionVariables.set('pacienteAdultoId', pac('Ana Lucía Méndez'));",
+                  "pm.collectionVariables.set('pacienteMenorSinRespId', pac('Mateo Ruiz'));",
+                  "pm.collectionVariables.set('pacienteInactivoId', pac('Roberto Juárez'));",
+                  "pm.collectionVariables.set('profesionalId', prof('Laura Gómez'));",
+                  "pm.collectionVariables.set('profesional2Id', prof('Pedro Sandoval'));",
+                  "pm.collectionVariables.set('profesionalInactivoId', prof('Andrés Paz'));",
+                  "pm.collectionVariables.set('servicioId', serv._id || '');",
+                  "pm.collectionVariables.set('servicioPrecio', serv.precioCentavos);",
+                  "pm.test('Existen los datos de prueba (ejecuta npm run seed:modulo-citas)', () => ['pacienteAdultoId', 'pacienteMenorSinRespId', 'pacienteInactivoId', 'profesionalId', 'profesional2Id', 'profesionalInactivoId', 'servicioId'].forEach(k => pm.expect(pm.collectionVariables.get(k), k).to.not.be.empty));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "2. Solicitudes de cita (RF-06)",
+      "item": [
+        {
+          "name": "Enviar solicitud (pública) para convertir",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/solicitudes-cita",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombreSolicitante\": \"Postman Convertir\",\n  \"correo\": \"postman@example.com\",\n  \"telefono\": \"5555-0000\",\n  \"servicio\": \"{{servicioId}}\",\n  \"fechaPreferida\": \"{{fechaFutura}}\",\n  \"mensaje\": \"Solicitud de prueba desde Postman.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 201', () => pm.response.to.have.status(201));",
+                  "const j = pm.response.json();",
+                  "pm.test('Solo devuelve un mensaje', () => pm.expect(Object.keys(j)).to.eql(['message']));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Enviar solicitud (pública) para rechazar",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/solicitudes-cita",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombreSolicitante\": \"Postman Rechazar\",\n  \"correo\": \"postman@example.com\",\n  \"telefono\": \"5555-0000\",\n  \"servicio\": \"{{servicioId}}\",\n  \"fechaPreferida\": \"{{fechaFutura}}\",\n  \"mensaje\": \"Solicitud de prueba desde Postman.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Enviar solicitud inválida → 400",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/solicitudes-cita",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombreSolicitante\": \"\",\n  \"correo\": \"abc\",\n  \"telefono\": \"1\",\n  \"servicio\": \"{{servicioId}}\",\n  \"fechaPreferida\": \"2020-01-01\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 400', () => pm.response.to.have.status(400));",
+                  "const j = pm.response.json();",
+                  "pm.test('Indica los campos con error', () => pm.expect(j.fields).to.include.keys('nombreSolicitante', 'correo', 'telefono', 'fechaPreferida'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Listar pendientes (para convertir)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/solicitudes-cita?estado=PENDIENTE&buscar=Postman%20Convertir"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test('Hay solicitudes pendientes', () => pm.expect(j.solicitudes.length).to.be.above(0));",
+                  "pm.test('Todas están PENDIENTE', () => j.solicitudes.forEach(s => pm.expect(s.estado).to.eql('PENDIENTE')));",
+                  "pm.collectionVariables.set('solicitudId', j.solicitudes[0]?._id || '');"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Listar pendientes (para rechazar)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/solicitudes-cita?estado=PENDIENTE&buscar=Postman%20Rechazar"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.collectionVariables.set('solicitudRechazoId', j.solicitudes[0]?._id || '');"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Detalle de solicitud",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/solicitudes-cita/{{solicitudId}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test('No reserva horario: no tiene cita', () => pm.expect(j.cita).to.eql(null));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Rechazar solicitud",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/solicitudes-cita/{{solicitudRechazoId}}/rechazar",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"motivo\": \"Prueba de rechazo desde Postman.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test('Queda RECHAZADA', () => pm.expect(j.estado).to.eql('RECHAZADA'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Rechazar otra vez → 409",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/solicitudes-cita/{{solicitudRechazoId}}/rechazar",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 409', () => pm.response.to.have.status(409));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Convertir solicitud en cita",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/solicitudes-cita/{{solicitudId}}/convertir",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"paciente\": \"{{pacienteAdultoId}}\",\n  \"servicio\": \"{{servicioId}}\",\n  \"profesional\": \"{{profesional2Id}}\",\n  \"fecha\": \"{{fechaFutura}}\",\n  \"horaInicio\": \"11:00\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 201', () => pm.response.to.have.status(201));",
+                  "const j = pm.response.json();",
+                  "pm.test('Queda ATENDIDA con referencia a la cita', () => { pm.expect(j.estado).to.eql('ATENDIDA'); pm.expect(j.cita).to.have.property('_id'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Convertir otra vez → 409",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/solicitudes-cita/{{solicitudId}}/convertir",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"paciente\": \"{{pacienteAdultoId}}\",\n  \"servicio\": \"{{servicioId}}\",\n  \"profesional\": \"{{profesional2Id}}\",\n  \"fecha\": \"{{fechaFutura}}\",\n  \"horaInicio\": \"14:00\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 409', () => pm.response.to.have.status(409));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "3. Citas (RF-07)",
+      "item": [
+        {
+          "name": "Programar cita",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/citas",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"paciente\": \"{{pacienteAdultoId}}\",\n  \"servicio\": \"{{servicioId}}\",\n  \"profesional\": \"{{profesionalId}}\",\n  \"fecha\": \"{{fechaFutura}}\",\n  \"horaInicio\": \"08:00\",\n  \"observaciones\": \"Cita creada desde Postman.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 201', () => pm.response.to.have.status(201));",
+                  "const j = pm.response.json();",
+                  "pm.collectionVariables.set('citaId', j._id);",
+                  "pm.test('RN-12: hora de fin calculada con la duración', () => pm.expect(j.horaFin).to.eql('09:00'));",
+                  "pm.test('Precio copiado del servicio', () => pm.expect(j.precioCentavos).to.eql(Number(pm.collectionVariables.get('servicioPrecio'))));",
+                  "pm.test('Inicia PENDIENTE', () => pm.expect(j.estado).to.eql('PENDIENTE'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "RN-01 Traslape mismo profesional → 409",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/citas",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"paciente\": \"{{pacienteAdultoId}}\",\n  \"servicio\": \"{{servicioId}}\",\n  \"profesional\": \"{{profesionalId}}\",\n  \"fecha\": \"{{fechaFutura}}\",\n  \"horaInicio\": \"08:30\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 409', () => pm.response.to.have.status(409));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "RN-04 Menor sin responsable → 422",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/citas",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"paciente\": \"{{pacienteMenorSinRespId}}\",\n  \"servicio\": \"{{servicioId}}\",\n  \"profesional\": \"{{profesionalId}}\",\n  \"fecha\": \"{{fechaFutura}}\",\n  \"horaInicio\": \"10:00\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 422', () => pm.response.to.have.status(422));",
+                  "const j = pm.response.json();",
+                  "pm.test('Error en paciente', () => pm.expect(j.fields).to.have.property('paciente'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "RN-14 Paciente inactivo → 422",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/citas",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"paciente\": \"{{pacienteInactivoId}}\",\n  \"servicio\": \"{{servicioId}}\",\n  \"profesional\": \"{{profesionalId}}\",\n  \"fecha\": \"{{fechaFutura}}\",\n  \"horaInicio\": \"10:00\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 422', () => pm.response.to.have.status(422));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "RN-03 Profesional inactivo → 422",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/citas",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"paciente\": \"{{pacienteAdultoId}}\",\n  \"servicio\": \"{{servicioId}}\",\n  \"profesional\": \"{{profesionalInactivoId}}\",\n  \"fecha\": \"{{fechaFutura}}\",\n  \"horaInicio\": \"10:00\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 422', () => pm.response.to.have.status(422));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "RN-02 Día cerrado (domingo) → 422",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/citas",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"paciente\": \"{{pacienteAdultoId}}\",\n  \"servicio\": \"{{servicioId}}\",\n  \"profesional\": \"{{profesionalId}}\",\n  \"fecha\": \"{{fechaDomingo}}\",\n  \"horaInicio\": \"10:00\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 422', () => pm.response.to.have.status(422));",
+                  "const j = pm.response.json();",
+                  "pm.test('Error en fecha', () => pm.expect(j.fields).to.have.property('fecha'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "RN-02 Termina después del cierre → 422",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/citas",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"paciente\": \"{{pacienteAdultoId}}\",\n  \"servicio\": \"{{servicioId}}\",\n  \"profesional\": \"{{profesionalId}}\",\n  \"fecha\": \"{{fechaFutura}}\",\n  \"horaInicio\": \"16:30\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 422', () => pm.response.to.have.status(422));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "RN-11 Fecha pasada → 422",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/citas",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"paciente\": \"{{pacienteAdultoId}}\",\n  \"servicio\": \"{{servicioId}}\",\n  \"profesional\": \"{{profesionalId}}\",\n  \"fecha\": \"{{ayer}}\",\n  \"horaInicio\": \"10:00\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 422', () => pm.response.to.have.status(422));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "RN-30 Datos inválidos → 400",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/citas",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"paciente\": \"abc\",\n  \"fecha\": \"31-12-2026\",\n  \"horaInicio\": \"25:00\",\n  \"precio\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 400', () => pm.response.to.have.status(400));",
+                  "const j = pm.response.json();",
+                  "pm.test('Rechaza campos no permitidos', () => pm.expect(j.fields).to.have.property('precio'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Consultar cita",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/citas/{{citaId}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test('Incluye paciente, servicio y profesional', () => { pm.expect(j.paciente).to.have.property('nombres'); pm.expect(j.servicio).to.have.property('nombre'); pm.expect(j.profesional).to.have.property('nombres'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Filtrar por profesional, estado y fecha",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/citas?profesional={{profesionalId}}&estado=PENDIENTE&desde={{fechaFutura}}&hasta={{fechaFutura}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test('Todas cumplen los filtros', () => j.citas.forEach(c => { pm.expect(c.profesional._id).to.eql(pm.collectionVariables.get('profesionalId')); pm.expect(c.estado).to.eql('PENDIENTE'); pm.expect(c.fecha).to.eql(pm.collectionVariables.get('fechaFutura')); }));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Historial por paciente",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/citas?paciente={{pacienteAdultoId}}&limite=100"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test('Todas son del paciente', () => j.citas.forEach(c => pm.expect(c.paciente._id).to.eql(pm.collectionVariables.get('pacienteAdultoId'))));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Confirmar cita",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/citas/{{citaId}}/estado",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"estado\": \"CONFIRMADA\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test('Queda CONFIRMADA', () => pm.expect(j.estado).to.eql('CONFIRMADA'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Completar cita futura → 409",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/citas/{{citaId}}/estado",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"estado\": \"COMPLETADA\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 409', () => pm.response.to.have.status(409));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Reprogramar cita",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/citas/{{citaId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"profesional\": \"{{profesionalId}}\",\n  \"fecha\": \"{{fechaFutura}}\",\n  \"horaInicio\": \"09:30\",\n  \"observaciones\": \"Reprogramada desde Postman.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test('Nuevo horario calculado', () => { pm.expect(j.horaInicio).to.eql('09:30'); pm.expect(j.horaFin).to.eql('10:30'); });",
+                  "pm.test('Conserva el precio original', () => pm.expect(j.precioCentavos).to.eql(Number(pm.collectionVariables.get('servicioPrecio'))));",
+                  "pm.test('Vuelve a PENDIENTE', () => pm.expect(j.estado).to.eql('PENDIENTE'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Cancelar cita",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/citas/{{citaId}}/estado",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"estado\": \"CANCELADA\",\n  \"motivo\": \"Cancelada desde Postman.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test('Queda CANCELADA con motivo', () => { pm.expect(j.estado).to.eql('CANCELADA'); pm.expect(j.motivoCancelacion).to.eql('Cancelada desde Postman.'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "RN-05 Cancelada → Completada → 409",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/citas/{{citaId}}/estado",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"estado\": \"COMPLETADA\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 409', () => pm.response.to.have.status(409));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Reprogramar cita cancelada → 409",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/citas/{{citaId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"profesional\": \"{{profesionalId}}\",\n  \"fecha\": \"{{fechaFutura}}\",\n  \"horaInicio\": \"11:00\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 409', () => pm.response.to.have.status(409));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "RN-13 Horario liberado al cancelar",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/citas",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"paciente\": \"{{pacienteAdultoId}}\",\n  \"servicio\": \"{{servicioId}}\",\n  \"profesional\": \"{{profesionalId}}\",\n  \"fecha\": \"{{fechaFutura}}\",\n  \"horaInicio\": \"09:30\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Buscar cita pasada confirmada (seed)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/citas?estado=CONFIRMADA&hasta={{ayer}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.collectionVariables.set('citaPasadaId', j.citas[0]?._id || '');"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Completar cita pasada",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/citas/{{citaPasadaId}}/estado",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"estado\": \"COMPLETADA\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Si ya no quedan citas pasadas confirmadas, vuelve a ejecutar npm run seed:citas otro día.",
+                  "if (!pm.collectionVariables.get('citaPasadaId')) pm.execution.skipRequest();"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test('Queda COMPLETADA', () => pm.expect(j.estado).to.eql('COMPLETADA'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "RN-06 Reprogramar completada → 409",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/citas/{{citaPasadaId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"profesional\": \"{{profesionalId}}\",\n  \"fecha\": \"{{fechaFutura}}\",\n  \"horaInicio\": \"13:00\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.collectionVariables.get('citaPasadaId')) pm.execution.skipRequest();"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 409', () => pm.response.to.have.status(409));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "4. Calendario (RF-08)",
+      "item": [
+        {
+          "name": "Calendario del mes",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/citas/calendario?desde={{hoy}}&hasta={{finMes}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test('Devuelve una lista dentro del rango', () => { pm.expect(j).to.be.an('array'); j.forEach(c => pm.expect(c.fecha >= pm.collectionVariables.get('hoy') && c.fecha <= pm.collectionVariables.get('finMes')).to.be.true); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Calendario filtrado por profesional",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/citas/calendario?desde={{hoy}}&hasta={{finMes}}&profesional={{profesionalId}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test('Solo del profesional', () => j.forEach(c => pm.expect(c.profesional._id).to.eql(pm.collectionVariables.get('profesionalId'))));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Calendario sin rango → 400",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/citas/calendario"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Calendario rango mayor a 62 días → 400",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/citas/calendario?desde=2026-01-01&hasta=2026-12-31"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
