@@ -7,6 +7,7 @@ import { developmentAdmin } from '../middleware/developmentAdmin.js';
 export const citasRouter = Router();
 citasRouter.use(developmentAdmin);
 citasRouter.get('/opciones', controller.options);
+citasRouter.get('/calendario', controller.calendar);
 citasRouter.get('/', controller.list);
 citasRouter.post('/', controller.create);
 citasRouter.get('/:id', controller.getOne);

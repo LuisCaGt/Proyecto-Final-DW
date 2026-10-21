@@ -10,5 +10,6 @@
     <RouterLink to="/admin/mensajes">Mensajes</RouterLink>
     <RouterLink to="/admin/solicitudes">Solicitudes de cita</RouterLink>
     <RouterLink to="/admin/citas">Citas</RouterLink>
+    <RouterLink to="/admin/calendario">Calendario</RouterLink>
   </nav>
 </template>

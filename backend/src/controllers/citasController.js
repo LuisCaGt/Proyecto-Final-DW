@@ -132,3 +132,19 @@ export async function changeState(req, res) {
   if (!actualizada) fail('La cita cambió de estado mientras la editabas. Recarga e intenta de nuevo.', null, 409);
   res.json(actualizada);
 }
+
+// GET /api/citas/calendario?desde=AAAA-MM-DD&hasta=AAAA-MM-DD — citas de un rango para el calendario (RF-08).
+// Sin paginación, por eso el rango se limita a 62 días (un mes visible más los días de relleno).
+export async function calendar(req, res) {
+  const q = req.query;
+  if (Object.keys(q).some(key => !['desde', 'hasta', 'profesional', 'estado'].includes(key) || typeof q[key] !== 'string')) fail('Filtros de calendario inválidos.', null, 400);
+  const { desde, hasta, profesional, estado } = q;
+  if (!validDate(desde) || !validDate(hasta) || desde > hasta) fail('Indica un rango válido con desde y hasta.', null, 400);
+  if ((Date.parse(hasta) - Date.parse(desde)) / 86400000 > 62) fail('El rango del calendario no puede superar 62 días.', null, 400);
+  if ((profesional && !isId(profesional)) || (estado && !ESTADOS_CITA.includes(estado))) fail('Filtros de calendario inválidos.', null, 400);
+  const filter = { fecha: { $gte: desde, $lte: hasta }, ...(profesional ? { profesional } : {}), ...(estado ? { estado } : {}) };
+  const citas = await Cita.find(filter).sort({ inicio: 1 })
+    .select('fecha horaInicio horaFin estado precioCentavos duracionMinutos observaciones paciente servicio profesional')
+    .populate(POPULATE).lean();
+  res.json(citas);
+}
