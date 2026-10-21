@@ -35,7 +35,6 @@ onMounted(load);
 <template>
   <section class="page-heading"><p class="eyebrow">ADMINISTRACIÓN</p><h1>Contenido institucional</h1><p class="intro">Actualiza la identidad y la presentación del centro.</p></section>
   <AdminNavigation />
-  <p class="dev-note">Vista de desarrollo local. La autenticación y los permisos de administrador están pendientes de integración.</p>
   <p v-if="error" class="feedback error" role="alert">{{ error }}</p><p v-if="notice" class="feedback success" role="status">{{ notice }}</p>
   <p v-if="loading" class="empty-state" role="status">Cargando contenido…</p>
   <div v-else-if="!loaded" class="empty-state"><button class="button secondary" @click="load">Reintentar</button></div>

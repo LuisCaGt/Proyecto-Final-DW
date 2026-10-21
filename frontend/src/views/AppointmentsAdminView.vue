@@ -97,7 +97,6 @@ onMounted(() => { loadOptions(); load(); });
 
 <template>
   <section class="page-heading"><p class="eyebrow">ADMINISTRACIÓN</p><h1>Citas</h1><p class="intro">Programa citas y consulta la agenda de los profesionales.</p></section><AdminNavigation />
-  <p class="dev-note">Acceso temporal de desarrollo. Pacientes y profesionales son datos provisionales hasta integrar sus módulos.</p>
 
   <section class="form-panel" aria-labelledby="new-appointment"><h2 id="new-appointment">Programar cita</h2>
     <p v-if="loadingOptions" role="status">Cargando opciones…</p>

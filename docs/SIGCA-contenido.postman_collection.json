@@ -8,6 +8,11 @@
     {
       "key": "baseUrl",
       "value": "http://localhost:3000"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
     }
   ],
   "item": [
@@ -129,5 +134,15 @@
         }
       ]
     }
-  ]
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  }
 }

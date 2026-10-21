@@ -1,10 +1,16 @@
-// PROVISIONAL — Datos mínimos de profesionales y pacientes para probar citas
-// mientras se integran los módulos de usuarios y pacientes (compañero 2).
+// Compatibilidad con los ejemplos de citas existentes, usando modelos completos.
+// Se conserva el nombre del comando para no romper las instrucciones del equipo.
 import 'dotenv/config';
 import mongoose from 'mongoose';
 import { connectDatabase } from '../src/config/database.js';
 import { Paciente } from '../src/models/Paciente.js';
 import { Usuario } from '../src/models/Usuario.js';
+import { Responsable } from '../src/models/Responsable.js';
+import { ResponsablePaciente } from '../src/models/ResponsablePaciente.js';
+import { hashPassword } from '../src/utils/security.js';
+
+if (process.env.NODE_ENV === 'production') throw new Error('No se pueden cargar ejemplos en producción.');
+if (!process.env.DEMO_SEED_PASSWORD || process.env.DEMO_SEED_PASSWORD.length < 12) throw new Error('Configura DEMO_SEED_PASSWORD (mínimo 12 caracteres).');
 
 const profesionales = [
   ['Laura', 'Gómez', 'laura.gomez@sigca.test', 'ACTIVO'],
@@ -23,16 +29,19 @@ const pacientes = [
 try {
   await connectDatabase();
   for (const [nombres, apellidos, correo, estado] of profesionales) {
-    await Usuario.updateOne({ correo }, { $setOnInsert: { nombres, apellidos, correo, rol: 'PROFESIONAL', estado } }, { upsert: true, runValidators: true });
+    await Usuario.updateOne({ correo }, { $setOnInsert: { identificador: `AGENDA-PRO-${profesionales.findIndex(p => p[2] === correo) + 1}`, nombres, apellidos, correo, rol: 'PROFESIONAL', estado, passwordHash: await hashPassword(process.env.DEMO_SEED_PASSWORD) } }, { upsert: true, runValidators: true });
   }
   for (const [nombres, apellidos, fecha, estado, responsable] of pacientes) {
-    await Paciente.updateOne({ nombres, apellidos }, { $setOnInsert: {
+    const paciente = await Paciente.findOneAndUpdate({ nombres, apellidos }, { $setOnInsert: {
+      identificador: `AGENDA-PAC-${pacientes.findIndex(p => p[0] === nombres) + 1}`, sexo: 'PREFIERO_NO_DECIR',
       nombres, apellidos, fechaNacimiento: new Date(`${fecha}T00:00:00Z`), estado,
-      // Referencia simulada hasta que exista el módulo de responsables.
-      responsables: responsable ? [new mongoose.Types.ObjectId()] : [],
-    } }, { upsert: true, runValidators: true });
+    } }, { upsert: true, returnDocument: 'after', runValidators: true });
+    if (responsable) {
+      const guardian = await Responsable.findOneAndUpdate({ identificador: 'AGENDA-RES-001' }, { $setOnInsert: { nombres: 'Responsable', apellidos: 'Ejemplo de agenda', telefono: '55550099' } }, { upsert: true, returnDocument: 'after', runValidators: true });
+      await ResponsablePaciente.updateOne({ paciente: paciente._id, responsable: guardian._id }, { $setOnInsert: { parentesco: 'Tutor' } }, { upsert: true, runValidators: true });
+    }
   }
-  console.log('Profesionales y pacientes provisionales cargados.');
+  console.log('Ejemplos de agenda cargados con usuarios, pacientes y responsables reales.');
 } catch (error) {
   console.error(error.message || 'No se pudieron cargar los datos provisionales.');
   process.exitCode = 1;

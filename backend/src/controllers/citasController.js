@@ -4,11 +4,25 @@ import { Horario, initialHours } from '../models/Horario.js';
 import { Servicio } from '../models/Servicio.js';
 import { validDate, validTime } from '../utils/fechas.js';
 import { conAgendaBloqueada, fail, prepararCita, prepararReprogramacion, verificarDisponibilidad } from '../services/agendaService.js';
-import { listarPacientes, listarProfesionales, POPULATE_PACIENTE, POPULATE_PROFESIONAL } from '../services/dependenciasCitas.js';
+import { filtroPacientesProfesional, listarPacientes, listarProfesionales, POPULATE_PACIENTE, POPULATE_PROFESIONAL } from '../services/dependenciasCitas.js';
 import { tienePagosValidos } from '../services/pagosCitas.js';
 
 const isId = value => mongoose.isObjectIdOrHexString(value);
 const POPULATE = [POPULATE_PACIENTE, POPULATE_PROFESIONAL, { path: 'servicio', select: 'nombre estado' }];
+
+function scopeToUser(req, filter) {
+  if (req.user.rol === 'PROFESIONAL') {
+    if (filter.profesional && String(filter.profesional) !== String(req.user._id)) fail('No puedes consultar citas de otro profesional.', null, 403);
+    filter.profesional = req.user._id;
+  }
+  return filter;
+}
+
+function visibleCita(req, cita) {
+  if (req.user.rol !== 'PROFESIONAL') return cita;
+  const { precioCentavos, ...basic } = cita;
+  return basic;
+}
 
 function validateCreate(body) {
   if (!body || typeof body !== 'object' || Array.isArray(body)) fail('Envía un objeto JSON.', null, 400);
@@ -26,9 +40,11 @@ function validateCreate(body) {
 // Listas para formularios y filtros. Incluye inactivos (con su estado) para consultar historiales;
 // el backend igual rechaza inactivos al programar.
 export async function options(req, res) {
+  const professional = req.user.rol === 'PROFESIONAL';
+  const patientFilter = professional ? { ...await filtroPacientesProfesional(req.user._id), estado: 'ACTIVO' } : {};
   const [pacientes, profesionales, servicios, horario] = await Promise.all([
-    listarPacientes(), listarProfesionales(),
-    Servicio.find({ estado: 'ACTIVO' }).select('nombre duracionMinutos precioCentavos').sort({ nombre: 1 }).lean(),
+    listarPacientes(patientFilter), listarProfesionales(professional ? { _id: req.user._id } : {}),
+    Servicio.find({ estado: 'ACTIVO' }).select(professional ? 'nombre duracionMinutos' : 'nombre duracionMinutos precioCentavos').sort({ nombre: 1 }).lean(),
     Horario.findById('atencion').lean(),
   ]);
   res.json({ pacientes, profesionales, servicios, horario: horario?.dias || initialHours });
@@ -59,18 +75,21 @@ export async function list(req, res) {
   if (paciente) filter.paciente = paciente;
   if (estado) filter.estado = estado;
   if (desde || hasta) filter.fecha = { ...(desde ? { $gte: desde } : {}), ...(hasta ? { $lte: hasta } : {}) };
+  scopeToUser(req, filter);
   const page = Number(pagina), limit = Number(limite);
   const [citas, total] = await Promise.all([
     Cita.find(filter).sort({ inicio: 1, _id: 1 }).skip((page - 1) * limit).limit(limit).populate(POPULATE).lean(),
     Cita.countDocuments(filter),
   ]);
-  res.json({ citas, total, pagina: page, totalPaginas: Math.ceil(total / limit) });
+  res.json({ citas: citas.map(cita => visibleCita(req, cita)), total, pagina: page, totalPaginas: Math.ceil(total / limit) });
 }
 
 // GET /api/citas/:id
 export async function getOne(req, res) {
-  await findCita(req.params.id);
-  res.json(await Cita.findById(req.params.id).populate(POPULATE).lean());
+  if (!isId(req.params.id)) fail('Identificador de cita inválido.', null, 400);
+  const cita = await Cita.findOne(scopeToUser(req, { _id: req.params.id })).populate(POPULATE).lean();
+  if (!cita) fail('Cita no encontrada.', null, 404);
+  res.json(visibleCita(req, cita));
 }
 
 async function findCita(id) {
@@ -143,8 +162,9 @@ export async function calendar(req, res) {
   if ((Date.parse(hasta) - Date.parse(desde)) / 86400000 > 62) fail('El rango del calendario no puede superar 62 días.', null, 400);
   if ((profesional && !isId(profesional)) || (estado && !ESTADOS_CITA.includes(estado))) fail('Filtros de calendario inválidos.', null, 400);
   const filter = { fecha: { $gte: desde, $lte: hasta }, ...(profesional ? { profesional } : {}), ...(estado ? { estado } : {}) };
+  scopeToUser(req, filter);
   const citas = await Cita.find(filter).sort({ inicio: 1 })
     .select('fecha horaInicio horaFin estado precioCentavos duracionMinutos observaciones paciente servicio profesional')
     .populate(POPULATE).lean();
-  res.json(citas);
+  res.json(citas.map(cita => visibleCita(req, cita)));
 }

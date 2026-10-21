@@ -24,7 +24,6 @@ onMounted(load);
 </script>
 <template>
   <section class="page-heading"><p class="eyebrow">ADMINISTRACIÓN</p><h1>Carrusel de inicio</h1><p class="intro">Elige de cinco a diez imágenes y organiza su presentación.</p></section><AdminNavigation />
-  <p class="dev-note">Edición habilitada únicamente mediante el acceso administrativo local de desarrollo.</p>
   <p v-if="error" class="feedback error" role="alert">{{ error }}</p><p v-if="notice" class="feedback success" role="status">{{ notice }}</p>
   <p v-if="loading" class="empty-state" role="status">Cargando imágenes…</p><div v-else-if="!loaded" class="empty-state"><button class="button secondary" @click="load">Reintentar</button></div>
   <form v-else class="carousel-editor" @submit.prevent="save"><fieldset :disabled="busy"><legend class="sr-only">Imágenes del carrusel</legend>

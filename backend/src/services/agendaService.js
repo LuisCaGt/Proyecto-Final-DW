@@ -16,7 +16,7 @@ export async function prepararCita({ paciente, servicio, profesional, fecha, hor
   // RN-03 y RN-14: paciente existente y activo. RN-04: menor con responsable.
   if (!pac) fields.paciente = 'El paciente no existe.';
   else if (pac.estado !== 'ACTIVO') fields.paciente = 'El paciente está inactivo y no puede recibir nuevas citas.';
-  else if (ageAt(pac.fechaNacimiento, fecha) < 18 && !tieneResponsable(pac)) fields.paciente = 'El paciente es menor de edad: registra al menos un responsable antes de programar la cita.';
+  else if (ageAt(pac.fechaNacimiento, fecha) < 18 && !await tieneResponsable(pac)) fields.paciente = 'El paciente es menor de edad: registra al menos un responsable antes de programar la cita.';
   // RN-03 y RN-07: servicio existente y activo.
   if (!serv) fields.servicio = 'El servicio no existe.';
   else if (serv.estado !== 'ACTIVO') fields.servicio = 'El servicio está inactivo y no puede usarse para nuevas citas.';
@@ -51,6 +51,7 @@ export async function prepararReprogramacion(cita, { profesional, fecha, horaIni
   const [pac, prof] = await Promise.all([findPaciente(cita.paciente), findProfesional(profesional)]);
   const fields = Object.create(null);
   if (!pac || pac.estado !== 'ACTIVO') fields.paciente = 'El paciente está inactivo y no puede recibir citas.';
+  else if (ageAt(pac.fechaNacimiento, fecha) < 18 && !await tieneResponsable(pac)) fields.paciente = 'El paciente menor de edad necesita un responsable antes de reprogramar.';
   if (!prof) fields.profesional = 'El profesional no existe.';
   else if (prof.estado !== 'ACTIVO') fields.profesional = 'El profesional está inactivo.';
   if (Object.keys(fields).length) fail('No se puede reprogramar la cita.', fields);

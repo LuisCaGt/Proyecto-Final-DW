@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "SIGCA — Servicios",
-    "description": "Pruebas locales. Habilitar ENABLE_DEV_ADMIN para operaciones administrativas. No contiene credenciales.",
+    "description": "Pruebas locales. Configurar un token JWT de ADMINISTRADOR para operaciones administrativas. No contiene credenciales.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -12,6 +12,11 @@
     {
       "key": "serviceId",
       "value": ""
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
     }
   ],
   "item": [
@@ -202,5 +207,15 @@
         }
       ]
     }
-  ]
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  }
 }

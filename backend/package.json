@@ -11,7 +11,11 @@
     "seed:solicitudes": "node scripts/seedSolicitudes.js",
     "seed:agenda-provisional": "node scripts/seedAgendaProvisional.js",
     "seed:citas": "node scripts/seedCitas.js",
-    "seed:modulo-citas": "npm run seed:servicios && npm run seed:solicitudes && npm run seed:agenda-provisional && npm run seed:citas"
+    "seed:modulo-citas": "npm run seed:servicios && npm run seed:solicitudes && npm run seed:agenda-provisional && npm run seed:citas",
+    "test": "node --test test/security.test.js",
+    "test:integration": "node --test test/*.integration.test.js",
+    "seed:demo": "node scripts/seedDemo.js",
+    "migrate:people": "node scripts/migratePeople.js"
   },
   "keywords": [],
   "author": "",

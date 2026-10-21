@@ -1,15 +1,15 @@
-// PROVISIONAL — Compañero 2 reemplaza este archivo con el modelo completo de RF-02/RF-13 (contraseña, JWT, etc.).
-// El módulo de citas solo usa: nombres, apellidos, rol y estado.
-// Si cambian esos nombres, ajustar únicamente services/dependenciasCitas.js.
 import mongoose from 'mongoose';
 
-export const ROLES = ['ADMINISTRADOR', 'RECEPCIONISTA', 'PROFESIONAL'];
-const schema = new mongoose.Schema({
-  nombres: { type: String, required: true, trim: true, maxlength: 120 },
-  apellidos: { type: String, required: true, trim: true, maxlength: 120 },
-  correo: { type: String, required: true, trim: true, lowercase: true, unique: true },
-  rol: { type: String, enum: ROLES, required: true },
+const usuarioSchema = new mongoose.Schema({
+  identificador: { type: String, required: true, trim: true, maxlength: 40, unique: true },
+  nombres: { type: String, required: true, trim: true, maxlength: 100 },
+  apellidos: { type: String, required: true, trim: true, maxlength: 100 },
+  correo: { type: String, required: true, trim: true, lowercase: true, maxlength: 254, unique: true },
+  telefono: { type: String, trim: true, maxlength: 30, default: '' },
+  rol: { type: String, enum: ['ADMINISTRADOR', 'RECEPCIONISTA', 'PROFESIONAL'], required: true },
   estado: { type: String, enum: ['ACTIVO', 'INACTIVO'], default: 'ACTIVO' },
+  especialidad: { type: String, trim: true, maxlength: 120, default: '' },
+  passwordHash: { type: String, required: true, select: false },
 }, { timestamps: true, collection: 'usuarios' });
 
-export const Usuario = mongoose.model('Usuario', schema);
+export const Usuario = mongoose.model('Usuario', usuarioSchema);

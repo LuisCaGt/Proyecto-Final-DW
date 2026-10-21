@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "SIGCA — Publicaciones y actividades",
-    "description": "Pruebas locales con datos ficticios. Las escrituras requieren ENABLE_DEV_ADMIN=true. No contiene credenciales.",
+    "description": "Pruebas locales con datos ficticios. Las escrituras requieren un token JWT válido en la variable token. No contiene credenciales.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -16,6 +16,11 @@
     {
       "key": "actividadId",
       "value": ""
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
     }
   ],
   "item": [
@@ -513,5 +518,15 @@
         }
       ]
     }
-  ]
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  }
 }
