@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "SIGCA — Contacto",
-    "description": "Pruebas locales con datos ficticios. Los GET privados y las escrituras administrativas requieren ENABLE_DEV_ADMIN=true. No envía correos.",
+    "description": "Pruebas locales con datos ficticios. Los GET privados y las escrituras administrativas requieren un token JWT válido en la variable token. No envía correos.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -12,6 +12,11 @@
     {
       "key": "mensajeId",
       "value": ""
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
     }
   ],
   "item": [
@@ -277,5 +282,15 @@
         }
       ]
     }
-  ]
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  }
 }

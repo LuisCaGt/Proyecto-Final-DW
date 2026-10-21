@@ -1,13 +1,18 @@
 {
   "info": {
     "name": "SIGCA — Carrusel y horarios",
-    "description": "Datos ficticios. Las peticiones PUT modifican la configuración y requieren ENABLE_DEV_ADMIN=true en desarrollo local.",
+    "description": "Datos ficticios. Las peticiones PUT modifican la configuración y requieren un token JWT válido en la variable token en desarrollo local.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
     {
       "key": "baseUrl",
       "value": "http://localhost:3000"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
     }
   ],
   "item": [
@@ -181,5 +186,15 @@
         }
       ]
     }
-  ]
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  }
 }

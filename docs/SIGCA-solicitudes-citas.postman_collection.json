@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "SIGCA — Solicitudes de cita, citas y calendario",
-    "description": "Pruebas de RF-06, RF-07 y RF-08 con sus reglas de negocio. Requiere ENABLE_DEV_ADMIN=true y los datos de `npm run seed:modulo-citas`. Ejecuta la colección completa en orden con el Collection Runner: cada ejecución usa una fecha futura aleatoria para no chocar con las anteriores.",
+    "description": "Pruebas de RF-06, RF-07 y RF-08 con sus reglas de negocio. Requiere un token JWT válido en la variable token y los datos de `npm run seed:modulo-citas`. Ejecuta la colección completa en orden con el Collection Runner: cada ejecución usa una fecha futura aleatoria para no chocar con las anteriores.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -76,6 +76,11 @@
     {
       "key": "citaPasadaId",
       "value": ""
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
     }
   ],
   "item": [
@@ -1255,5 +1260,15 @@
         }
       ]
     }
-  ]
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  }
 }
