@@ -22,7 +22,7 @@ Sistema Integral de Gestión de Citas y Atención, una aplicación web académic
 - Citas: programación con reglas de agenda, confirmación, reprogramación, cancelación, completado, historial por paciente y filtros.
 - Calendario mensual de citas con FullCalendar.
 
-La autenticación y los módulos completos de usuarios y pacientes están pendientes; el módulo de citas usa modelos provisionales de `Paciente` y `Usuario` (ver más abajo). El acceso administrativo actual es únicamente para desarrollo local.
+Autenticación JWT, usuarios por rol, pacientes y responsables integrados con citas y calendario. Consulta [la guía de autenticación e integración](docs/AUTENTICACION-PACIENTES.md) antes de iniciar: incluye configuración, migración de datos anteriores, cuentas demo y pruebas.
 
 ## Requisitos
 
@@ -40,6 +40,7 @@ Abre dos terminales en la carpeta del proyecto.
 cd backend
 npm ci
 cp .env.example .env
+# Configura JWT_SECRET antes de iniciar (ver guía de autenticación).
 npm run dev
 ```
 
@@ -53,7 +54,7 @@ Variables:
 | MONGODB_URI | mongodb://127.0.0.1:27017/sigca | Conexión a MongoDB |
 | FRONTEND_URL | http://localhost:5173 | Origen permitido por CORS |
 
-La API inicia únicamente si logra conectar con MongoDB. Si falla, revisa la URI y la disponibilidad de la base. No hay credenciales de demostración porque todavía no existe autenticación.
+La API inicia únicamente si logra conectar con MongoDB. Si falla, revisa la URI y la disponibilidad de la base. La sesión requiere JWT_SECRET; las cuentas ficticias se cargan con `npm run seed:demo` y una contraseña elegida en DEMO_SEED_PASSWORD.
 
 ### Terminal 2: frontend
 
@@ -108,9 +109,9 @@ frontend/
 - `/servicios`: catálogo público, solo muestra servicios activos.
 - `/admin/servicios`: formulario y listado administrativo.
 
-La administración está bloqueada por defecto. Para probarla localmente, configura `ENABLE_DEV_ADMIN=true` en `backend/.env` y reinicia el backend. El acceso temporal solo se admite desde loopback y se bloquea con `NODE_ENV=production`. Express escucha en `127.0.0.1`.
+Las consultas privadas requieren `Authorization: Bearer <token>`. Inicia sesión en `/iniciar-sesion`. ADMINISTRADOR gestiona el portal y mensajes; ADMINISTRADOR y RECEPCIONISTA gestionan pacientes, responsables y agenda. PROFESIONAL consulta únicamente sus pacientes vinculados y sus citas.
 
-Este acceso de desarrollo deberá reemplazarse por JWT y autorización del rol ADMINISTRADOR al integrar usuarios. No es un sistema de autenticación. El frontend puede mostrar la pantalla administrativa, pero las operaciones y el listado privado se protegen desde la API.
+El acceso se verifica en la API mediante JWT y rol actual en MongoDB. Ocultar enlaces en el frontend no sustituye estos permisos.
 
 ### Datos ficticios
 
@@ -160,7 +161,7 @@ Comprueba también:
 2. Desactivar: debe desaparecer del catálogo y permanecer en administración.
 3. Reactivar: debe volver al catálogo.
 4. Enviar precio decimal en centavos, duración cero o imagen con protocolo inválido: respuesta 400.
-5. Deshabilitar `ENABLE_DEV_ADMIN`: las operaciones administrativas responden 403.
+5. Sin token las operaciones privadas responden 401; con un rol sin permisos responden 403.
 
 ## Contenido institucional
 
@@ -173,14 +174,14 @@ La colección `contenidoInstitucional` almacena un documento único con identifi
 
 Campos obligatorios: `nombreCentro` (100 caracteres), `logo` (2048), `tituloInicio` (180), `descripcionInicio` (1500), `mision` (3000) y `vision` (3000). La actualización requiere todos los campos. El logo admite HTTP/HTTPS o una imagen local en `/images/`. Se incluye `/images/logo.svg`.
 
-- `/admin/contenido`: editor de identidad, inicio, misión y visión. Comparte el acceso administrativo temporal descrito en el módulo de servicios.
+- `/admin/contenido`: editor de identidad, inicio, misión y visión. Requiere iniciar sesión con el rol ADMINISTRADOR.
 - `/`: muestra el título y la información principal guardados.
 - `/nosotros`: muestra misión y visión.
 - El encabezado, el pie y el título del navegador utilizan el nombre configurado. Si una imagen del logo no carga, se muestra un respaldo visual.
 
 El editor muestra una vista previa de la identidad, mensajes de validación y confirmación, y permite descartar cambios. Al navegar fuera del formulario con cambios pendientes solicita confirmación. Tras guardar, el estado compartido actualiza las vistas públicas. Las demás pestañas reciben el contenido actualizado al recargar.
 
-Importa `docs/SIGCA-contenido.postman_collection.json` para consultar y actualizar el contenido. Comprueba persistencia recargando la página y verifica que las entradas inválidas respondan 400 y que la edición sin acceso habilitado responda 403.
+Importa `docs/SIGCA-contenido.postman_collection.json` para consultar y actualizar el contenido. Comprueba persistencia recargando la página y verifica que las entradas inválidas respondan 400 y que la edición sin sesión responda 401 y con un rol no autorizado responda 403.
 
 ## Carrusel de inicio
 
@@ -201,9 +202,9 @@ Importa `docs/SIGCA-contenido.postman_collection.json` para consultar y actualiz
 - Cada día tiene `dia` (0: domingo a 6: sábado), `abierto` (booleano), `inicio` y `fin` (HH:mm). Los días cerrados se guardan con horas `null`.
 - Deben enviarse los siete días, sin duplicados. El cierre de un día abierto debe ser posterior a su apertura; no se admiten intervalos que crucen medianoche. Puede configurarse toda la semana cerrada.
 - La primera consulta crea un horario ficticio: lunes a viernes 08:00–17:00, sábado 08:00–12:00 y domingo cerrado. Es editable; no representa un horario real del centro.
-- El futuro módulo de citas deberá consumir esta configuración y validar los intervalos en el backend al programar o reprogramar citas.
+- El módulo de citas consume esta configuración y valida los intervalos en el backend al programar o reprogramar citas.
 
-Las escrituras de ambos módulos usan el mismo control administrativo temporal, bloqueado por defecto y en producción. Los formularios advierten al navegar con cambios sin guardar. Consulta `docs/SIGCA-carrusel-horarios.postman_collection.json` para probar respuestas válidas, mínimo de imágenes e intervalos inválidos.
+Las escrituras de ambos módulos requieren un JWT válido y el rol ADMINISTRADOR. Los formularios advierten al navegar con cambios sin guardar. Consulta `docs/SIGCA-carrusel-horarios.postman_collection.json` para probar respuestas válidas, mínimo de imágenes e intervalos inválidos.
 
 ## Publicaciones educativas y actividades corporativas
 
@@ -214,7 +215,7 @@ Las escrituras de ambos módulos usan el mismo control administrativo temporal, 
 | Contenido educativo | /educativo | /admin/publicaciones |
 | Corporativo | /corporativo | /admin/actividades |
 
-Los formularios permiten registrar, editar y activar o desactivar contenidos. El listado administrativo permite buscar por título y filtrar por estado. Los registros no se eliminan físicamente; los inactivos permanecen en administración y se excluyen de las consultas públicas. La administración utiliza el acceso temporal de desarrollo y deberá integrarse con JWT y el rol ADMINISTRADOR.
+Los formularios permiten registrar, editar y activar o desactivar contenidos. El listado administrativo permite buscar por título y filtrar por estado. Los registros no se eliminan físicamente; los inactivos permanecen en administración y se excluyen de las consultas públicas. La administración requiere JWT y rol ADMINISTRADOR.
 
 Las publicaciones requieren título (máximo 160 caracteres), descripción (6000) y `fechaPublicacion` en formato AAAA-MM-DD. `imagen` y `enlace` son opcionales y se guardan como cadenas vacías si no se proporcionan. Las fechas se almacenan sin conversión de zona horaria y se muestran sin desplazamiento de día. La fecha es informativa: un contenido ACTIVO se muestra aunque su fecha sea futura; no se implementa publicación programada.
 
@@ -247,7 +248,7 @@ npm run seed:contenido
 
 Carga tres publicaciones y tres actividades ficticias, incluyendo una capacitación, una escuela para padres y otra actividad. No reemplaza registros existentes con el mismo título. Las publicaciones de demostración no incluyen recomendaciones clínicas.
 
-Importa `docs/SIGCA-editorial.postman_collection.json`. Ejecuta cada grupo en orden para registrar un contenido, guardar su identificador, editarlo, desactivarlo, comprobar que su detalle público devuelve 404 y reactivarlo. Comprueba también fechas imposibles, protocolos de enlace inválidos y galerías vacías: deben responder 400. Con el acceso administrativo deshabilitado o en producción, las operaciones privadas responden 403.
+Importa `docs/SIGCA-editorial.postman_collection.json`. Ejecuta cada grupo en orden para registrar un contenido, guardar su identificador, editarlo, desactivarlo, comprobar que su detalle público devuelve 404 y reactivarlo. Comprueba también fechas imposibles, protocolos de enlace inválidos y galerías vacías: deben responder 400. Sin sesión, las operaciones privadas responden 401; con un rol no autorizado, responden 403.
 
 ## Contacto y mensajes
 
@@ -287,7 +288,7 @@ npm run seed:contacto
 
 Genera dos mensajes ficticios, uno nuevo y otro leído, y conserva los mensajes existentes que tengan el mismo correo y asunto. El formulario funciona aunque no se ejecute este script.
 
-Importa `docs/SIGCA-contacto.postman_collection.json`. Verifica registro público (201), rechazo de campos inválidos (400), listado, consulta del detalle, cambio de estado y paginación. Deshabilitar `ENABLE_DEV_ADMIN` debe bloquear listado, detalle, cambios de estado y edición del centro con 403, manteniendo disponible el envío público. La integración definitiva deberá autorizar la consulta de mensajes para ADMINISTRADOR.
+Importa `docs/SIGCA-contacto.postman_collection.json`. Verifica registro público (201), rechazo de campos inválidos (400), listado, consulta del detalle, cambio de estado y paginación. Sin sesión, listado, detalle y cambios privados responden 401; los roles distintos de ADMINISTRADOR reciben 403. El envío de mensajes permanece público.
 
 ## Solicitudes de cita, citas y calendario
 
@@ -300,7 +301,7 @@ Importa `docs/SIGCA-contacto.postman_collection.json`. Verifica registro públic
 
 ### Datos de demostración
 
-Desde `backend/`, con `ENABLE_DEV_ADMIN=true`:
+Desde `backend/`, después de configurar JWT_SECRET y DEMO_SEED_PASSWORD y ejecutar `npm run seed:demo`:
 
 ```bash
 npm run seed:modulo-citas
@@ -308,9 +309,9 @@ npm run seed:modulo-citas
 
 Ejecuta en orden `seed:servicios`, `seed:solicitudes`, `seed:agenda-provisional` y `seed:citas`. Carga 6 solicitudes (pendientes, una rechazada y una atendida con su cita), 4 profesionales (uno inactivo), 5 pacientes (un menor con responsable, un menor sin responsable y un inactivo) y 15 citas pasadas y futuras en todos los estados. Repetir los comandos el mismo día no duplica datos; las fechas de las citas son relativas al día en que se ejecuta.
 
-### Modelos provisionales
+### Integración de usuarios, pacientes y responsables
 
-`backend/src/models/Paciente.js`, `backend/src/models/Usuario.js` y `scripts/seedAgendaProvisional.js` existen solo para probar citas mientras se integran los módulos de pacientes y usuarios. Al integrarlos, se reemplazan esos archivos; si los campos cambian, solo se ajusta `backend/src/services/dependenciasCitas.js`. La regla RN-27 (no cancelar citas con pagos válidos) está en `backend/src/services/pagosCitas.js` y se activa sola cuando exista el modelo `Pago` con los campos `cita` y `estado`.
+Los modelos de `Paciente` y `Usuario` son definitivos y conservan sus colecciones y referencias MongoDB. `seed:agenda-provisional` se mantiene como alias compatible para los ejemplos del equipo, pero crea registros completos y responsables persistidos. En una base anterior, ejecuta primero `npm run migrate:people` con el servidor detenido. La regla RN-27 está en `backend/src/services/pagosCitas.js` y queda preparada para el futuro módulo de pagos.
 
 ### Endpoints
 
@@ -333,7 +334,7 @@ Reglas aplicadas en el backend: RN-01 a RN-07, RN-11 a RN-14, RN-27 (preparada) 
 
 ### Pruebas
 
-Importa `docs/SIGCA-solicitudes-citas.postman_collection.json` y ejecútala completa con el Collection Runner. La primera petición calcula las fechas y obtiene los identificadores de los datos de demostración; cada ejecución usa una fecha futura distinta.
+Importa `docs/SIGCA-solicitudes-citas.postman_collection.json`, configura la variable `token` con una sesión de ADMINISTRADOR o RECEPCIONISTA y ejecútala completa con el Collection Runner. La primera petición calcula las fechas y obtiene los identificadores de los datos de demostración; cada ejecución usa una fecha futura distinta.
 
 ## Referencias
 
