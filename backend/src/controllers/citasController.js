@@ -6,7 +6,7 @@ import { validDate, validTime } from '../utils/fechas.js';
 import { conAgendaBloqueada, fail, prepararCita, prepararReprogramacion, verificarDisponibilidad } from '../services/agendaService.js';
 import { filtroPacientesProfesional, listarPacientes, listarProfesionales, POPULATE_PACIENTE, POPULATE_PROFESIONAL } from '../services/dependenciasCitas.js';
 import { tienePagosValidos } from '../services/pagosCitas.js';
-
+import { cancelarCitaSiNoTienePagosValidos } from '../services/cancelacionCitaPagos.js';
 const isId = value => mongoose.isObjectIdOrHexString(value);
 const POPULATE = [POPULATE_PACIENTE, POPULATE_PROFESIONAL, { path: 'servicio', select: 'nombre estado' }];
 
@@ -145,7 +145,14 @@ export async function changeState(req, res) {
   // RN-27: no se cancela una cita con pagos válidos.
   if (body.estado === 'CANCELADA' && await tienePagosValidos(cita._id)) fail('La cita tiene pagos registrados. Anula primero sus pagos para poder cancelarla.', null, 409);
 
-  const set = { estado: body.estado, ...(body.estado === 'CANCELADA' ? { motivoCancelacion: body.motivo?.trim() || null } : {}) };
+  const set = { estado: body.estado, ...(body.estado === 'CANCELADA' ? { motivoCancelacion: body.motivo?.trim() || null } : {}) }; if (body.estado === 'CANCELADA') {
+  const cancelada = await cancelarCitaSiNoTienePagosValidos({
+    citaId: cita._id,
+    estadoActual: cita.estado,
+    motivo: body.motivo,
+  });
+  return res.json(await cancelada.populate(POPULATE));
+}
   // El filtro por estado actual evita que dos cambios simultáneos se pisen.
   const actualizada = await Cita.findOneAndUpdate({ _id: cita._id, estado: cita.estado }, { $set: set }, { returnDocument: 'after', runValidators: true }).populate(POPULATE);
   if (!actualizada) fail('La cita cambió de estado mientras la editabas. Recarga e intenta de nuevo.', null, 409);
