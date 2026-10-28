@@ -204,6 +204,7 @@ onMounted(load);
     </section>
     <section v-if="canManage" class="record-section">
       <h2>Historial de citas</h2>
+      <RouterLink :to="{ path: '/admin/pagos', query: { paciente: route.params.id } }">Consultar pagos y saldos del paciente</RouterLink>
       <ul v-if="patient.citas?.length" class="admin-services">
         <li v-for="cita in patient.citas" :key="cita._id">
           <strong>{{ cita.fecha }} · {{ cita.horaInicio }}–{{ cita.horaFin }}</strong>

@@ -59,3 +59,51 @@ Desde la carpeta `backend`, los comandos definidos en `package.json` son:
 ```bash
 npm run test:caja
 npm run seed:cajas
+```
+
+## Pagos y saldos
+
+Las pantallas `/admin/pagos` y `/admin/caja` requieren ADMINISTRADOR o RECEPCIONISTA. `/admin/pagos/:id/comprobante` muestra el comprobante interno y permite imprimirlo o guardarlo como PDF desde el diálogo de impresión. El profesional no accede a finanzas.
+
+Cada abono conserva paciente, cita, caja, monto entero en centavos, método, usuario, fecha y un comprobante único. No hay eliminación física. Las anulaciones requieren motivo: recepción solo anula cobros de su caja; administración puede anular en cualquier caja abierta. Ningún rol anula pagos de una caja cerrada.
+
+El precio es la copia histórica de la cita. Los pagos REGISTRADO determinan el saldo y los estados PENDIENTE, PARCIAL y PAGADO; los ANULADO no cuentan. Una cita gratuita se considera PAGADO y no admite cobros de monto cero. No se permite exceder el saldo, tampoco con cobros simultáneos. Un comprobante representa el pago individual, no una factura fiscal.
+
+| Método | Ruta | Uso |
+|---|---|---|
+| GET / POST | `/api/pagos` | Historial paginado / registrar abono |
+| GET | `/api/pagos/:id` | Comprobante y datos del pago |
+| PATCH | `/api/pagos/:id/anular` | Anular con motivo |
+| GET | `/api/pagos/citas` | Citas paginadas con saldos |
+| GET | `/api/citas/:id/saldo` | Precio histórico, pagado, saldo y estado financiero |
+| GET | `/api/citas/:id/pagos` | Historial de la cita |
+
+`GET /api/pagos` acepta paciente, cita, método, estado, desde, hasta, pagina y limite (máximo 50). Los nombres exactos de los parámetros son `paciente`, `cita`, `metodo`, `estado`, `desde`, `hasta`, `pagina`, `limite`. Las fechas de los filtros se interpretan en Guatemala. Desde la ficha del paciente se abre su historial financiero.
+
+## MongoDB y ejecución local
+
+Cobros, anulaciones, cierres y cancelaciones protegidas se ejecutan mediante transacciones. Requieren un replica set o MongoDB Atlas; un servidor standalone no sirve para estas operaciones. No hay alternativa que debilite la consistencia.
+
+Para desarrollo local, instala las dependencias del backend y ejecuta en una terminal:
+
+```bash
+cd backend
+npm ci
+npm run mongo:local
+```
+
+La primera ejecución descarga el binario de MongoDB. El puerto 27017 debe estar libre. El servidor escucha solo en loopback y conserva los datos en `backend/.data/mongo`, excluido de Git. Deja esa terminal abierta. Configura en `backend/.env`:
+
+```env
+MONGODB_URI=mongodb://127.0.0.1:27017/sigca?replicaSet=sigca-local
+```
+
+Conserva tu `JWT_SECRET` privado. Ejecuta el backend en otra terminal con `npm run dev` y el frontend desde su carpeta con `npm run dev`. Si 5173 está ocupado, usa `npm run dev -- --port 5174` en frontend. Este servidor de MongoDB es para desarrollo; producción requiere una instalación administrada con autenticación.
+
+Antes de actualizar una base que ya contenga cajas y pagos, guarda un respaldo y, con el backend detenido, ejecuta `npm run migrate:finanzas`. Completa las referencias a pacientes y comprobantes de pagos antiguos y corrige el índice de datos de demostración sin eliminar movimientos ni cierres. Si hay pagos sin cita, se detiene para revisión. En una instalación nueva también puede ejecutarse.
+
+## Demostración y comprobación
+
+Ejecuta primero los seeds de usuarios y servicios; luego `npm run seed:cajas`. Genera 3 cajas y 10 pagos ficticios, incluyendo abonos y anulaciones, con citas propias de demostración. Los ejemplos existentes se conservan y no se borran pagos al repetirlo. Si recepción ya tiene caja abierta, no se crea otra; para obtener la demostración completa utiliza una base nueva.
+
+`npm run test:finanzas` crea y elimina exclusivamente un replica set temporal de pruebas. Verifica permisos, saldos históricos, sobrepagos, anulaciones, concurrencia entre cobros y cancelación, cierres y reapertura. `npm run test:caja` verifica las fórmulas. Importa `docs/SIGCA-finanzas.postman_collection.json` para las comprobaciones manuales; configura baseUrl, token, citaId, cajaId y pagoId con datos ficticios.

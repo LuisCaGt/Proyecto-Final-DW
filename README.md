@@ -32,7 +32,7 @@ Autenticación JWT, usuarios por rol, pacientes y responsables integrados con ci
 
 ## Instalar y ejecutar
 
-Abre dos terminales en la carpeta del proyecto.
+Para pagos y caja se requiere MongoDB replica set o Atlas. En desarrollo local inicia primero `npm run mongo:local` desde `backend` en una terminal y déjala abierta. Después abre otras dos terminales para backend y frontend. Los datos locales persisten en `backend/.data/mongo`. Consulta [pagos y caja](docs/caja-diaria.md) para migración, cuentas y pruebas.
 
 ### Terminal 1: backend
 
@@ -51,7 +51,7 @@ Variables:
 | Variable | Valor de ejemplo | Uso |
 | --- | --- | --- |
 | PORT | 3000 | Puerto de Express |
-| MONGODB_URI | mongodb://127.0.0.1:27017/sigca | Conexión a MongoDB |
+| MONGODB_URI | mongodb://127.0.0.1:27017/sigca?replicaSet=sigca-local | Conexión a MongoDB |
 | FRONTEND_URL | http://localhost:5173 | Origen permitido por CORS |
 
 La API inicia únicamente si logra conectar con MongoDB. Si falla, revisa la URI y la disponibilidad de la base. La sesión requiere JWT_SECRET; las cuentas ficticias se cargan con `npm run seed:demo` y una contraseña elegida en DEMO_SEED_PASSWORD.
@@ -342,3 +342,9 @@ Importa `docs/SIGCA-solicitudes-citas.postman_collection.json`, configura la var
 - Vite: https://vite.dev/guide/
 - Mongoose: https://mongoosejs.com/docs/connections.html
 - Express: https://expressjs.com/
+
+## Pagos y caja diaria
+
+Administración y recepción disponen de `/admin/pagos` para abonos, saldos, filtros e historial por paciente y comprobantes imprimibles, y `/admin/caja` para apertura, movimientos, cierre e historial. Los pagos válidos no pueden superar el precio histórico de la cita. Las anulaciones requieren motivo y caja abierta; recepción opera sobre su propia caja. Los cierres guardan totales por método y diferencia de efectivo.
+
+Lee [la guía financiera](docs/caja-diaria.md) antes de actualizar una base existente. Incluye configuración de replica set, migración, datos de demostración, API y pruebas.

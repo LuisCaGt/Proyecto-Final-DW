@@ -18,6 +18,8 @@ const auth = useAuthStore();
     </template>
     <template v-if="auth.canManagePeople">
       <RouterLink to="/admin/solicitudes">Solicitudes de cita</RouterLink>
+      <RouterLink to="/admin/pagos">Pagos y saldos</RouterLink>
+      <RouterLink to="/admin/caja">Caja diaria</RouterLink>
       <RouterLink to="/admin/citas">Citas</RouterLink>
       <RouterLink to="/admin/pacientes">Pacientes</RouterLink>
       <RouterLink to="/admin/responsables">Responsables</RouterLink>
