@@ -15,7 +15,9 @@
     "test": "node --test test/security.test.js",
     "test:integration": "node --test test/*.integration.test.js",
     "seed:demo": "node scripts/seedDemo.js",
-    "migrate:people": "node scripts/migratePeople.js"
+    "migrate:people": "node scripts/migratePeople.js",
+    "seed:cajas": "node scripts/seedCajasDemo.js",
+    "test:caja": "node --test test/caja.calculo.test.js"
   },
   "keywords": [],
   "author": "",

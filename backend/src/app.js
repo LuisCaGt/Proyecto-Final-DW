@@ -12,8 +12,9 @@ import { contenidoRouter } from './routes/contenidoRoutes.js';
 import { serviciosRouter, serviciosAdminRouter } from './routes/serviciosRoutes.js';
 import { solicitudesRouter } from './routes/solicitudesRoutes.js';
 import { citasRouter } from './routes/citasRoutes.js';
-
+import { cajasRouter } from './routes/cajasRoutes.js';
 export const app = express();
+import { pagosRouter } from './routes/pagosRoutes.js';
 app.disable('x-powered-by');
 app.use(cors({ origin: process.env.FRONTEND_URL || 'http://localhost:5173' }));
 app.use(express.json({ limit: '1mb' }));
@@ -46,7 +47,8 @@ app.use('/api/servicios', serviciosRouter);
 app.use('/api/admin/servicios', serviciosAdminRouter);
 app.use('/api/solicitudes-cita', solicitudesRouter);
 app.use('/api/citas', citasRouter);
-
+app.use('/api/cajas', cajasRouter);
+app.use('/api/pagos', pagosRouter);
 app.use((req, res) => res.status(404).json({ message: 'Ruta no encontrada' }));
 app.use((error, req, res, next) => {
   if (error.code === 11000) return res.status(409).json({ message: 'Ya existe un registro con ese identificador o correo.' });
