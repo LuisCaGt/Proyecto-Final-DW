@@ -16,7 +16,7 @@ const cierreSchema = new mongoose.Schema({
 
 const cajaSchema = new mongoose.Schema({
   responsable: { type: mongoose.Schema.Types.ObjectId, ref: 'Usuario', required: true, index: true },
-  seedKey: { type: String, default: null, select: false },
+  seedKey: { type: String, select: false },
   abiertaEn: { type: Date, required: true, default: Date.now },
   montoInicialCentavos: { type: Number, required: true, min: 0, validate: Number.isSafeInteger },
   estado: { type: String, enum: ['ABIERTA', 'CERRADA'], default: 'ABIERTA', required: true },
@@ -25,5 +25,5 @@ const cajaSchema = new mongoose.Schema({
 }, { timestamps: true, collection: 'cajas' });
 
 cajaSchema.index({ responsable: 1, estado: 1 }, { unique: true, partialFilterExpression: { estado: 'ABIERTA' }, name: 'una_caja_abierta_por_responsable' });
-cajaSchema.index({ seedKey: 1 }, { unique: true, sparse: true });
+cajaSchema.index({ seedKey: 1 }, { unique: true, partialFilterExpression: { seedKey: { $type: 'string' } } });
 export const Caja = mongoose.models.Caja || mongoose.model('Caja', cajaSchema);

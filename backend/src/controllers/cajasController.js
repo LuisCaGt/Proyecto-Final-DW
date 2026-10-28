@@ -1,3 +1,4 @@
+import { aCentavos as centavos } from '../utils/montos.js';
 import mongoose from 'mongoose';
 import { Caja } from '../models/Caja.js';
 import { Pago } from '../models/Pago.js';
@@ -6,13 +7,7 @@ import { calcularCierreCaja } from '../services/calculosCaja.js';
 const fail = (res, status, message) => res.status(status).json({ message });
 const isId = value => mongoose.isObjectIdOrHexString(value);
 const rolesCaja = ['ADMINISTRADOR', 'RECEPCIONISTA'];
-const acceso = (req, caja) => req.user.rol === 'ADMINISTRADOR' || String(caja.responsable) === String(req.user._id);
-
-function centavos(value) {
-  const amount = Number(value);
-  if (!Number.isFinite(amount) || amount < 0 || Math.round(amount * 100) !== amount * 100) return null;
-  return Math.round(amount * 100);
-}
+const acceso = (req, caja) => req.user.rol === 'ADMINISTRADOR' || String(caja.responsable?._id || caja.responsable) === String(req.user._id);
 
 export async function resumen(cajaId, session) {
   const query = Pago.aggregate([
@@ -48,7 +43,7 @@ export async function listar(req, res) {
   if (!rolesCaja.includes(req.user.rol)) return fail(res, 403, 'No tienes acceso a cajas.');
   const filter = req.user.rol === 'ADMINISTRADOR' ? {} : { responsable: req.user._id };
   const cajas = await Caja.find(filter).sort({ abiertaEn: -1 }).populate('responsable', 'nombres apellidos correo').lean();
-  return res.json(await Promise.all(cajas.map(async caja => ({ ...caja, resumen: await resumen(caja._id) }))));
+  return res.json(await Promise.all(cajas.map(async caja => ({ ...caja, resumen: caja.estado === 'CERRADA' ? caja.cierre : await resumen(caja._id) }))));
 }
 
 export async function detalle(req, res) {
@@ -57,7 +52,7 @@ export async function detalle(req, res) {
   const caja = await Caja.findById(req.params.id).populate('responsable', 'nombres apellidos correo').lean();
   if (!caja) return fail(res, 404, 'Caja no encontrada.');
   if (!acceso(req, caja)) return fail(res, 403, 'Solo puedes consultar tus propias cajas.');
-  const totales = await resumen(caja._id);
+  const totales = caja.estado === 'CERRADA' ? caja.cierre : await resumen(caja._id);
   return res.json({ ...caja, resumen: { ...totales, efectivoEsperadoCentavos: caja.montoInicialCentavos + totales.totalEfectivoCentavos } });
 }
 

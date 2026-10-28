@@ -2,54 +2,49 @@ import mongoose from 'mongoose';
 import { Caja } from '../models/Caja.js';
 import { Cita } from '../models/Cita.js';
 import { Pago } from '../models/Pago.js';
+import { saldoCita } from './saldos.js';
+const fail = (message, status = 409) => { throw Object.assign(new Error(message), { status }); };
 
-// Invocar desde el flujo de cobro existente. La cita y la caja se escriben en
-// la misma transacción para serializar cobro/cancelación y cobro/cierre.
 export async function registrarPagoCaja({ citaId, usuarioId, metodo, montoCentavos }) {
-  if (!mongoose.isObjectIdOrHexString(citaId)) throw Object.assign(new Error('Cita inválida.'), { status: 400 });
-  if (!['EFECTIVO', 'TRANSFERENCIA', 'TARJETA'].includes(metodo)
-    || !Number.isSafeInteger(montoCentavos) || montoCentavos < 1) {
-    throw Object.assign(new Error('Método o monto de pago inválido.'), { status: 400 });
-  }
+  if (!mongoose.isObjectIdOrHexString(citaId) || !['EFECTIVO', 'TRANSFERENCIA', 'TARJETA'].includes(metodo)
+    || !Number.isSafeInteger(montoCentavos) || montoCentavos < 1) fail('Datos del pago inválidos.', 400);
   const session = await mongoose.startSession();
-  let pago;
   try {
-    await session.withTransaction(async () => {
+    return await session.withTransaction(async () => {
       const cita = await Cita.findById(citaId).session(session);
-      if (!cita || cita.estado === 'CANCELADA') throw Object.assign(new Error('La cita no existe o está cancelada.'), { status: 409 });
+      if (!cita || cita.estado === 'CANCELADA') fail('La cita no existe o está cancelada.');
       const caja = await Caja.findOne({ responsable: usuarioId, estado: 'ABIERTA' }).session(session);
-      if (!caja) throw Object.assign(new Error('Debes abrir una caja antes de registrar pagos.'), { status: 409 });
-      // Escritura condicional: choca transaccionalmente con el cierre de caja.
-      const touched = await Caja.updateOne({ _id: caja._id, estado: 'ABIERTA' }, { $inc: { versionMovimientos: 1 } }, { session });
-      if (!touched.modifiedCount) throw Object.assign(new Error('La caja está cerrada.'), { status: 409 });
-      // Escritura sobre la cita para que cancelar y cobrar compitan sobre el mismo documento.
-      const citaTouched = await Cita.updateOne({ _id: cita._id, estado: { $ne: 'CANCELADA' } }, { $set: { updatedAt: new Date() } }, { session });
-      if (!citaTouched.modifiedCount) throw Object.assign(new Error('La cita fue cancelada.'), { status: 409 });
-      [pago] = await Pago.create([{ cita: cita._id, caja: caja._id, registradoPor: usuarioId, metodo, montoCentavos }], { session });
+      if (!caja) fail('Debes abrir tu caja antes de registrar pagos.');
+      // Ambas escrituras serializan pagos contra cierre, cancelación y otros cobros.
+      await Caja.updateOne({ _id: caja._id, estado: 'ABIERTA' }, { $inc: { versionMovimientos: 1 } }, { session });
+      await Cita.updateOne({ _id: cita._id }, { $set: { updatedAt: new Date() } }, { session });
+      const saldo = await saldoCita(cita, session);
+      if (montoCentavos > saldo.saldoCentavos) fail('El monto supera el saldo pendiente de la cita.');
+      const [pago] = await Pago.create([{ paciente: cita.paciente, cita: cita._id, caja: caja._id,
+        registradoPor: usuarioId, metodo, montoCentavos }], { session });
+      return pago;
     });
-    return pago;
   } finally { await session.endSession(); }
 }
 
-export async function anularPagoCaja({ pagoId, usuarioId, motivo }) {
-  if (!mongoose.isObjectIdOrHexString(pagoId)) throw Object.assign(new Error('Pago inválido.'), { status: 400 });
+export async function anularPagoCaja({ pagoId, usuarioId, rol, motivo }) {
+  if (!mongoose.isObjectIdOrHexString(pagoId)) fail('Pago inválido.', 400);
+  if (typeof motivo !== 'string' || !motivo.trim() || motivo.trim().length > 500) fail('Indica un motivo de 1 a 500 caracteres.', 400);
   const session = await mongoose.startSession();
-  let anulado;
   try {
-    await session.withTransaction(async () => {
+    return await session.withTransaction(async () => {
       const pago = await Pago.findById(pagoId).session(session);
-      if (!pago) throw Object.assign(new Error('Pago no encontrado.'), { status: 404 });
-      if (pago.estado !== 'REGISTRADO') throw Object.assign(new Error('El pago ya está anulado.'), { status: 409 });
-      const caja = await Caja.findOne({ _id: pago.caja, estado: 'ABIERTA' }).session(session);
-      if (!caja) throw Object.assign(new Error('No se puede anular un pago de una caja cerrada.'), { status: 409 });
-      const touched = await Caja.updateOne({ _id: caja._id, estado: 'ABIERTA' }, { $inc: { versionMovimientos: 1 } }, { session });
-      if (!touched.modifiedCount) throw Object.assign(new Error('La caja está cerrada.'), { status: 409 });
-      const updated = await Pago.findOneAndUpdate({ _id: pago._id, estado: 'REGISTRADO' }, {
-        $set: { estado: 'ANULADO', anuladoPor: usuarioId, anuladoEn: new Date(), motivoAnulacion: motivo?.trim() || null },
-      }, { session, returnDocument: 'after' });
-      if (!updated) throw Object.assign(new Error('El pago cambió simultáneamente.'), { status: 409 });
-      anulado = updated;
+      if (!pago) fail('Pago no encontrado.', 404);
+      const caja = await Caja.findById(pago.caja).session(session);
+      if (!caja) fail('Caja no encontrada.', 404);
+      if (rol !== 'ADMINISTRADOR' && String(caja.responsable) !== String(usuarioId)) fail('Solo puedes anular pagos de tu propia caja.', 403);
+      if (caja.estado !== 'ABIERTA') fail('No se puede anular un pago de una caja cerrada.');
+      if (pago.estado !== 'REGISTRADO') fail('El pago ya está anulado.');
+      await Caja.updateOne({ _id: caja._id }, { $inc: { versionMovimientos: 1 } }, { session });
+      await Cita.updateOne({ _id: pago.cita }, { $set: { updatedAt: new Date() } }, { session });
+      return Pago.findOneAndUpdate({ _id: pago._id, estado: 'REGISTRADO' }, {
+        $set: { estado: 'ANULADO', anuladoPor: usuarioId, anuladoEn: new Date(), motivoAnulacion: motivo.trim() },
+      }, { session, returnDocument: 'after', runValidators: true });
     });
-    return anulado;
   } finally { await session.endSession(); }
 }

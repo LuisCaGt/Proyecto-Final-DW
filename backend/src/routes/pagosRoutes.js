@@ -1,9 +1,11 @@
 import { Router } from 'express';
-import { requireAuth } from '../middleware/auth.js';
+import { requireAuth, authorizeRoles } from '../middleware/auth.js';
 import * as controller from '../controllers/pagosController.js';
-
 export const pagosRouter = Router();
-pagosRouter.use(requireAuth);
+pagosRouter.use(requireAuth, authorizeRoles('ADMINISTRADOR','RECEPCIONISTA'));
+pagosRouter.get('/', controller.listar);
 pagosRouter.post('/', controller.registrar);
+pagosRouter.get('/citas', controller.citasConSaldo);
 pagosRouter.get('/cita/:citaId', controller.listarDeCita);
+pagosRouter.get('/:id', controller.detalle);
 pagosRouter.patch('/:id/anular', controller.anular);

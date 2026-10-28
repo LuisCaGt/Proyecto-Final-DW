@@ -51,6 +51,7 @@ app.use('/api/cajas', cajasRouter);
 app.use('/api/pagos', pagosRouter);
 app.use((req, res) => res.status(404).json({ message: 'Ruta no encontrada' }));
 app.use((error, req, res, next) => {
+  if (error.code === 20 || error.codeName === 'IllegalOperation') return res.status(503).json({ message: 'Pagos y caja requieren MongoDB replica set. Consulta docs/caja-diaria.md.' });
   if (error.code === 11000) return res.status(409).json({ message: 'Ya existe un registro con ese identificador o correo.' });
   const invalidJson = error.type === 'entity.parse.failed';
   const tooLarge = error.type === 'entity.too.large';

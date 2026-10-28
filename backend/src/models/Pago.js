@@ -1,6 +1,9 @@
 import mongoose from 'mongoose';
+import { randomUUID } from 'node:crypto';
 
 const pagoSchema = new mongoose.Schema({
+  comprobante: { type: String, required: true, unique: true, default: () => 'SIGCA-' + randomUUID() },
+  paciente: { type: mongoose.Schema.Types.ObjectId, ref: 'Paciente', required: true, index: true },
   cita: { type: mongoose.Schema.Types.ObjectId, ref: 'Cita', required: true, index: true },
   caja: { type: mongoose.Schema.Types.ObjectId, ref: 'Caja', required: true, index: true },
   registradoPor: { type: mongoose.Schema.Types.ObjectId, ref: 'Usuario', required: true },

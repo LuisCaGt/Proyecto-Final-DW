@@ -17,7 +17,10 @@
     "seed:demo": "node scripts/seedDemo.js",
     "migrate:people": "node scripts/migratePeople.js",
     "seed:cajas": "node scripts/seedCajasDemo.js",
-    "test:caja": "node --test test/caja.calculo.test.js"
+    "test:caja": "node --test test/caja.calculo.test.js",
+    "mongo:local": "node scripts/mongoLocal.js",
+    "migrate:finanzas": "node scripts/migrateFinanzas.js",
+    "test:finanzas": "node --test test/finanzas.integration.test.js"
   },
   "keywords": [],
   "author": "",
@@ -29,5 +32,8 @@
     "express": "^5.3.0",
     "mongoose": "^9.11.2"
   },
-  "private": true
+  "private": true,
+  "devDependencies": {
+    "mongodb-memory-server": "^11.3.0"
+  }
 }
