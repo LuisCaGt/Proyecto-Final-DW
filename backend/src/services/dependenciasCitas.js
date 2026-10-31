@@ -1,4 +1,4 @@
-// Punto único de contacto entre citas y los módulos del compañero 2 (pacientes, responsables, usuarios).
+// Consultas de pacientes, responsables y profesionales utilizadas por la agenda.
 // Las relaciones de responsables se resuelven contra registros persistidos reales.
 import { Paciente } from '../models/Paciente.js';
 import { Usuario } from '../models/Usuario.js';

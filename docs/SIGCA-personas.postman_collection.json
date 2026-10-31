@@ -181,7 +181,7 @@
         ],
         "body": {
           "mode": "raw",
-          "raw": "{\"identificador\": \"PM-USR-{{runId}}\", \"nombres\": \"Profesional\", \"apellidos\": \"Prueba Postman\", \"correo\": \"pm-{{runId}}@sigca.test\", \"telefono\": \"55550001\", \"rol\": \"PROFESIONAL\", \"password\": \"{{demoUserPassword}}\", \"especialidad\": \"Prueba académica\"}",
+          "raw": "{\"identificador\": \"PM-USR-{{runId}}\", \"nombres\": \"Profesional\", \"apellidos\": \"Prueba Postman\", \"correo\": \"pm-{{runId}}@sigca.test\", \"telefono\": \"55550001\", \"rol\": \"PROFESIONAL\", \"password\": \"{{demoUserPassword}}\", \"especialidad\": \"Prueba de integración\"}",
           "options": {
             "raw": {
               "language": "json"

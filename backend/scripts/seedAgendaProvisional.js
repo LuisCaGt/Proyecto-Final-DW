@@ -1,5 +1,5 @@
 // Compatibilidad con los ejemplos de citas existentes, usando modelos completos.
-// Se conserva el nombre del comando para no romper las instrucciones del equipo.
+// El nombre del comando conserva compatibilidad con instalaciones anteriores.
 import 'dotenv/config';
 import mongoose from 'mongoose';
 import { connectDatabase } from '../src/config/database.js';

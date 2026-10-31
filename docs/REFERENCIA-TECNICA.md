@@ -1,8 +1,6 @@
-# SIGCA — Guía de entrega y demostración
+# SIGCA — Referencia técnica
 
 ## Integrantes
-
-Equipo de cuatro integrantes autorizado para este proyecto.
 
 | Integrante | GitHub | Responsabilidad principal |
 | --- | --- | --- |
@@ -54,7 +52,7 @@ Las reglas de agenda se implementan principalmente en `agendaService.js` y el co
 - Carga `seed:all` en una base temporal y repetición el mismo día sin duplicar registros.
 - Revisión manual del portal, calendario profesional, ficha de paciente, materiales, pagos y detalle de cierre de caja.
 
-Las pruebas cubren los escenarios descritos; no sustituyen la demostración individual ni garantizan la ausencia de errores en cualquier situación.
+Las pruebas cubren los escenarios descritos.
 
 ## Colecciones Postman
 
@@ -81,27 +79,3 @@ Las capturas contienen exclusivamente datos ficticios.
 | materiales.png | Catálogo de materiales |
 | pagos.png | Saldos e historial de pagos |
 | caja.png | Cierre con ingresos Q1,000, esperado Q700, contado Q690 y faltante Q10 |
-
-## Recorrido de demostración
-
-1. Abrir el portal y mostrar las secciones públicas. Cambiar contenido con el administrador y comprobarlo en el portal.
-2. Registrar paciente y responsable, asociarlos con parentesco y crear un servicio con precio.
-3. Programar una cita, intentar un traslape, confirmar y consultar el calendario.
-4. Abrir caja con monto inicial. Registrar un abono parcial y consultar saldo; registrar el resto y comprobar PAGADO.
-5. Consultar comprobantes, historial del paciente e ingresos por método.
-6. Anular un pago de caja abierta con motivo y comprobar el saldo recalculado. Una cita con pagos válidos no puede cancelarse.
-7. Cerrar caja con efectivo contado, consultar diferencia y movimientos; comprobar que no admite pagos ni anulaciones posteriores.
-8. Iniciar sesión como profesional: solo ver citas y pacientes propios, asignar material y completar una cita confirmada que ya inició.
-9. Probar acceso restringido con otro rol y consultar los registros persistidos en MongoDB.
-
-## ZIP y entrega en Canvas
-
-El ZIP final se genera con `git archive`, por lo que incluye únicamente archivos versionados: frontend, backend, documentación, evidencias, scripts y `.env.example`. No contiene `.env`, `.git`, `node_modules`, archivos compilados ni la base de datos. La base se reconstruye con `seed:all`.
-
-Para regenerarlo desde la raíz del repositorio, después de guardar los cambios en un commit:
-
-```bash
-git archive --format=zip --prefix=Proyecto-Final-DW/ -o ../Proyecto-Final-DW-entrega-final.zip HEAD
-```
-
-En Canvas se debe adjuntar el ZIP final y el enlace al repositorio. La carga en Canvas y la defensa las realiza el equipo. Todos deben poder explicar arquitectura, Vue Router, Pinia, JWT, referencias MongoDB, validaciones, centavos enteros y transacciones financieras.
