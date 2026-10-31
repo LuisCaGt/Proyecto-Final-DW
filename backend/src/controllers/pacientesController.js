@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { Pago } from '../models/Pago.js';
 import { Paciente } from '../models/Paciente.js';
 import { Responsable } from '../models/Responsable.js';
 import { ResponsablePaciente } from '../models/ResponsablePaciente.js';
@@ -134,7 +135,7 @@ export async function getPatient(req, res) {
     menorDeEdad: calculateAge(patient.fechaNacimiento) < 18,
     citas: await Cita.find({ paciente: patient._id }).sort({ inicio: -1 }).populate('profesional', 'nombres apellidos').populate('servicio', 'nombre').lean(),
     materialesAsignados: await listarMaterialesAsignados(patient._id),
-    pagos: [],
+    pagos: await Pago.find({ paciente: patient._id }).sort({ registradoEn: -1, _id: -1 }).lean(),
   });
 }
 

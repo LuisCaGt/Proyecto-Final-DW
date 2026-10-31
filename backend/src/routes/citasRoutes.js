@@ -14,4 +14,4 @@ citasRouter.get('/:id/saldo', manage, pagos.saldo);
 citasRouter.get('/:id/pagos', manage, pagos.listarDeCita);
 citasRouter.get('/:id', controller.getOne);
 citasRouter.put('/:id', manage, controller.update);
-citasRouter.patch('/:id/estado', manage, controller.changeState);
+citasRouter.patch('/:id/estado', controller.changeState);

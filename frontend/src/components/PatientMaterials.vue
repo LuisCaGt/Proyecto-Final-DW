@@ -8,17 +8,24 @@ import { MATERIAL_TYPES, formatDate } from '../utils/materials';
 const props = defineProps({ patientId: { type: String, required: true }, patientActive: { type: Boolean, default: true } });
 const auth = useAuthStore();
 const canAssign = computed(() => ['ADMINISTRADOR', 'PROFESIONAL'].includes(auth.user?.rol));
-const assigned = ref([]), catalog = ref([]);
+const assigned = ref([]), catalog = ref([]), catalogPage = ref(1), catalogPages = ref(0);
 const selected = ref(''), observaciones = ref('');
 const loading = ref(true), busy = ref(false), error = ref(''), notice = ref('');
 // No se ofrecen materiales ya asignados a este paciente.
 const available = computed(() => catalog.value.filter(item => !assigned.value.some(a => a.material?._id === item._id)));
 
+async function loadCatalog(page = 1) {
+  error.value = ''; selected.value = '';
+  try {
+    const data = await request(`/materiales?estado=ACTIVO&limite=20&pagina=${page}`);
+    catalog.value = data.materiales; catalogPage.value = data.pagina; catalogPages.value = data.totalPaginas;
+  } catch (err) { error.value = err.message; }
+}
 async function load() {
   loading.value = true; error.value = '';
   try {
     assigned.value = await request(`/pacientes/${props.patientId}/materiales`);
-    if (canAssign.value && props.patientActive) catalog.value = (await request('/materiales?estado=ACTIVO&limite=100')).materiales;
+    if (canAssign.value && props.patientActive) await loadCatalog(catalogPage.value);
   } catch (err) { error.value = err.message; }
   finally { loading.value = false; }
 }
@@ -56,9 +63,14 @@ onMounted(load);
         <h3>Asignar material</h3>
         <label for="material-select">Material</label>
         <select id="material-select" v-model="selected" required :disabled="busy">
-          <option disabled value="">{{ available.length ? 'Selecciona un material' : 'No hay más materiales activos disponibles' }}</option>
+          <option disabled value="">{{ available.length ? 'Selecciona un material' : 'No hay materiales disponibles en esta página' }}</option>
           <option v-for="item in available" :key="item._id" :value="item._id">{{ item.titulo }} · {{ MATERIAL_TYPES[item.tipo] }}</option>
         </select>
+        <div v-if="catalogPages > 1" class="pagination">
+          <button type="button" class="button secondary" :disabled="busy || catalogPage <= 1" @click="loadCatalog(catalogPage - 1)">Materiales anteriores</button>
+          <span>{{ catalogPage }} / {{ catalogPages }}</span>
+          <button type="button" class="button secondary" :disabled="busy || catalogPage >= catalogPages" @click="loadCatalog(catalogPage + 1)">Más materiales</button>
+        </div>
         <label for="material-notes">Indicaciones (opcional)</label>
         <textarea id="material-notes" v-model.trim="observaciones" rows="2" maxlength="1000" :disabled="busy" placeholder="Por ejemplo: practicar 10 minutos diarios."></textarea>
         <div class="actions"><button class="button" :disabled="busy || !selected">{{ busy ? 'Asignando…' : 'Asignar material' }}</button><RouterLink class="text-button" to="/admin/materiales">Ver catálogo</RouterLink></div>

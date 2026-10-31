@@ -92,9 +92,9 @@ export async function getOne(req, res) {
   res.json(visibleCita(req, cita));
 }
 
-async function findCita(id) {
+async function findCita(id, filter = {}) {
   if (!isId(id)) fail('Identificador de cita inválido.', null, 400);
-  const cita = await Cita.findById(id).lean();
+  const cita = await Cita.findOne({ _id: id, ...filter }).lean();
   if (!cita) fail('Cita no encontrada.', null, 404);
   return cita;
 }
@@ -135,7 +135,8 @@ export async function changeState(req, res) {
   if (!ESTADOS_CITA.includes(body.estado)) fail('Revisa los datos.', { estado: 'Estado inválido.' }, 400);
   if (body.motivo !== undefined && (typeof body.motivo !== 'string' || body.motivo.trim().length > 500)) fail('Revisa los datos.', { motivo: 'Máximo 500 caracteres.' }, 400);
 
-  const cita = await findCita(req.params.id);
+  if (req.user.rol === 'PROFESIONAL' && body.estado !== 'COMPLETADA') fail('El profesional solo puede completar sus propias citas.', null, 403);
+  const cita = await findCita(req.params.id, scopeToUser(req, {}));
   // RN-05 y estados finales: solo se permiten las transiciones definidas.
   if (!TRANSICIONES[cita.estado].includes(body.estado)) {
     const permitidas = TRANSICIONES[cita.estado].map(e => e.toLowerCase()).join(' o ');
@@ -155,9 +156,9 @@ export async function changeState(req, res) {
     return res.json(await cancelada.populate(POPULATE));
   }
   // El filtro por estado actual evita que dos cambios simultáneos se pisen.
-  const actualizada = await Cita.findOneAndUpdate({ _id: cita._id, estado: cita.estado }, { $set: set }, { returnDocument: 'after', runValidators: true }).populate(POPULATE);
+  const actualizada = await Cita.findOneAndUpdate({ _id: cita._id, estado: cita.estado, profesional: cita.profesional, updatedAt: cita.updatedAt }, { $set: set }, { returnDocument: 'after', runValidators: true }).populate(POPULATE);
   if (!actualizada) fail('La cita cambió de estado mientras la editabas. Recarga e intenta de nuevo.', null, 409);
-  res.json(actualizada);
+  res.json(visibleCita(req, actualizada.toObject()));
 }
 
 // GET /api/citas/calendario?desde=AAAA-MM-DD&hasta=AAAA-MM-DD — citas de un rango para el calendario (RF-08).

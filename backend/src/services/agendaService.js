@@ -48,10 +48,11 @@ export async function calcularHorario({ fecha, horaInicio, duracionMinutos }) {
 
 // Reprogramar: conserva servicio, duración y precio originales; valida profesional, paciente y nuevo horario.
 export async function prepararReprogramacion(cita, { profesional, fecha, horaInicio }) {
-  const [pac, prof] = await Promise.all([findPaciente(cita.paciente), findProfesional(profesional)]);
+  const [pac, prof, serv] = await Promise.all([findPaciente(cita.paciente), findProfesional(profesional), Servicio.findById(cita.servicio).select('estado').lean()]);
   const fields = Object.create(null);
   if (!pac || pac.estado !== 'ACTIVO') fields.paciente = 'El paciente está inactivo y no puede recibir citas.';
   else if (ageAt(pac.fechaNacimiento, fecha) < 18 && !await tieneResponsable(pac)) fields.paciente = 'El paciente menor de edad necesita un responsable antes de reprogramar.';
+  if (!serv || serv.estado !== 'ACTIVO') fields.servicio = 'El servicio está inactivo o ya no existe; no se puede reprogramar esta cita.';
   if (!prof) fields.profesional = 'El profesional no existe.';
   else if (prof.estado !== 'ACTIVO') fields.profesional = 'El profesional está inactivo.';
   if (Object.keys(fields).length) fail('No se puede reprogramar la cita.', fields);

@@ -21,7 +21,7 @@ const calendar = ref(null);
 const professionals = ref([]);
 const filters = reactive({ profesional: '', estado: '' });
 const citas = ref([]);           // citas del rango visible
-const loading = ref(false), error = ref('');
+const loading = ref(false), error = ref(''), completing = ref(false), notice = ref('');
 const selectedDate = ref(today), selected = ref(null);
 const dayCitas = computed(() => citas.value.filter(cita => cita.fecha === selectedDate.value));
 
@@ -37,7 +37,7 @@ async function fetchEvents(info, success, failure) {
       backgroundColor: colors[cita.estado], borderColor: colors[cita.estado], textColor: '#fff',
       classNames: cita.estado === 'CANCELADA' ? ['cita-cancelada'] : [], extendedProps: { cita },
     })));
-  } catch (err) { error.value = err.message; failure(err); }
+  } catch (err) { citas.value = []; selected.value = null; error.value = err.message; failure(err); }
   finally { loading.value = false; }
 }
 
@@ -46,15 +46,29 @@ const calendarOptions = {
   plugins: [dayGridPlugin, interactionPlugin],
   initialView: 'dayGridMonth', locale: esLocale, height: 'auto', fixedWeekCount: false,
   headerToolbar: { left: 'prev,next today', center: 'title', right: '' },
-  dayMaxEvents: 3, displayEventEnd: true,
+  dayMaxEvents: 3, displayEventEnd: true, eventDisplay: 'block',
   eventTimeFormat: { hour: '2-digit', minute: '2-digit', hour12: false },
   events: fetchEvents,
   selectable: true, unselectAuto: false, selectAllow: info => info.end - info.start === 86400000,
   select: info => { selectedDate.value = info.startStr; selected.value = null; },
-  eventClick: info => { selected.value = info.event.extendedProps.cita; selectedDate.value = selected.value.fecha; info.view.calendar.select(selected.value.fecha); },
+  eventClick: info => { const cita = info.event.extendedProps.cita; info.view.calendar.select(cita.fecha); selectedDate.value = cita.fecha; selected.value = cita; notice.value = ''; },
 };
 
-watch(filters, () => calendar.value?.getApi().refetchEvents());
+async function completeAppointment() {
+  if (!selected.value || completing.value) return;
+  completing.value = true; error.value = ''; notice.value = '';
+  try {
+    const cita = await request(`/citas/${selected.value._id}/estado`, { method: 'PATCH', body: JSON.stringify({ estado: 'COMPLETADA' }) });
+    selected.value = cita;
+    notice.value = 'Cita marcada como completada.';
+    calendar.value?.getApi().refetchEvents();
+  } catch (err) { error.value = err.message; }
+  finally { completing.value = false; }
+}
+const canComplete = computed(() => auth.user?.rol === 'PROFESIONAL' && selected.value?.estado === 'CONFIRMADA'
+  && String(selected.value.profesional?._id) === String(auth.user.id)
+  && new Date(`${selected.value.fecha}T${selected.value.horaInicio}:00-06:00`) <= new Date());
+watch(filters, () => { selected.value = null; notice.value = ''; calendar.value?.getApi().refetchEvents(); });
 onMounted(async () => {
   calendar.value?.getApi().select(today);
   try { professionals.value = (await request('/citas/opciones')).profesionales; } catch (err) { error.value = err.message; }
@@ -62,8 +76,9 @@ onMounted(async () => {
 </script>
 
 <template>
-  <section class="page-heading"><p class="eyebrow">ADMINISTRACIÓN</p><h1>Calendario de citas</h1><p class="intro">Visualiza las citas por mes, selecciona un día para ver su agenda y una cita para consultar sus detalles.</p></section><AdminNavigation />
+  <section class="page-heading"><p class="eyebrow">{{ auth.user?.rol === 'PROFESIONAL' ? 'ATENCIÓN CLÍNICA' : 'ADMINISTRACIÓN' }}</p><h1>Calendario de citas</h1><p class="intro">Visualiza las citas por mes, selecciona un día para ver su agenda y una cita para consultar sus detalles.</p></section><AdminNavigation />
   <p v-if="error" class="feedback error" role="alert">{{ error }}</p>
+  <p v-if="notice" class="feedback success" role="status">{{ notice }}</p>
 
   <div class="inbox-filters">
     <div><label for="cal-professional">Profesional</label><select id="cal-professional" v-model="filters.profesional"><option value="">Todos</option><option v-for="item in professionals" :key="item._id" :value="item._id">{{ fullName(item) }}{{ item.estado === 'INACTIVO' ? ' (inactivo)' : '' }}</option></select></div>
@@ -88,6 +103,7 @@ onMounted(async () => {
           <template v-if="auth.canManagePeople"><dt>Precio</dt><dd>{{ formatMoney(selected.precioCentavos) }}</dd></template>
           <template v-if="selected.observaciones"><dt>Observaciones</dt><dd>{{ selected.observaciones }}</dd></template>
         </dl>
+        <button v-if="canComplete" class="button" :disabled="completing" @click="completeAppointment">{{ completing ? 'Guardando…' : 'Marcar como completada' }}</button>
         <RouterLink v-if="auth.canManagePeople" class="button secondary" to="/admin/citas">Gestionar en Citas</RouterLink>
       </template>
       <template v-else>
@@ -123,4 +139,10 @@ onMounted(async () => {
 :deep(.fc .cita-cancelada .fc-event-title){text-decoration:line-through}
 :deep(.fc .fc-button){text-transform:capitalize}
 @media (max-width:900px){.calendar-layout{grid-template-columns:1fr}}
+</style>
+
+<style scoped>
+:deep(.fc .fc-daygrid-event){white-space:normal;overflow:hidden;margin-left:1px;margin-right:1px}
+:deep(.fc .fc-event-time){display:block;white-space:normal;font-size:10px}
+:deep(.fc .fc-event-title){display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px}
 </style>

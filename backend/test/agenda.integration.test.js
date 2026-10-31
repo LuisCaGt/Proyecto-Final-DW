@@ -143,3 +143,30 @@ test('edad respeta el cumpleaños y la fecha local de Guatemala', () => {
   assert.equal(calculateAge('2008-10-21',new Date('2026-10-21T06:00:00Z')),18);
   assert.equal(ageAt('2008-02-29','2026-02-28'),17);
 });
+
+test('profesional completa solo sus citas iniciadas y no recibe importes', async () => {
+  const past = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+  const make = profesional => Cita.create({ paciente: patients[0]._id, servicio: service._id, profesional,
+    fecha: past, horaInicio: '09:00', horaFin: '09:30', inicio: new Date(past + 'T09:00:00-06:00'),
+    fin: new Date(past + 'T09:30:00-06:00'), duracionMinutos: 30, precioCentavos: 10000, estado: 'CONFIRMADA' });
+  const own = await make(staff[2]._id), foreign = await make(staff[3]._id);
+  assert.equal((await call(`/citas/${foreign._id}/estado`, staff[2], 'PATCH', { estado: 'COMPLETADA' })).status, 404);
+  assert.equal((await call(`/citas/${own._id}/estado`, staff[2], 'PATCH', { estado: 'CANCELADA' })).status, 403);
+  const response = await call(`/citas/${own._id}/estado`, staff[2], 'PATCH', { estado: 'COMPLETADA' });
+  assert.equal(response.status, 200, JSON.stringify(response.body));
+  assert.equal(response.body.estado, 'COMPLETADA');
+  assert.equal('precioCentavos' in response.body, false);
+  assert.equal((await call(`/citas/${own._id}/estado`, staff[2], 'PATCH', { estado: 'COMPLETADA' })).status, 409);
+});
+
+test('reprogramación rechaza un servicio inactivo sin alterar la cita', async () => {
+  const c = await call('/citas', staff[0], 'POST', appointment(patients[0], staff[3], '15:00'));
+  assert.equal(c.status, 201, JSON.stringify(c.body));
+  await Servicio.updateOne({ _id: service._id }, { $set: { estado: 'INACTIVO' } });
+  try {
+    const response = await call(`/citas/${c.body._id}`, staff[1], 'PUT', { profesional: String(staff[3]._id), fecha: day, horaInicio: '16:00' });
+    assert.equal(response.status, 422);
+    assert.ok(response.body.fields.servicio);
+    assert.equal((await Cita.findById(c.body._id)).horaInicio, '15:00');
+  } finally { await Servicio.updateOne({ _id: service._id }, { $set: { estado: 'ACTIVO' } }); }
+});

@@ -1,5 +1,6 @@
 <script setup>
 import { computed, onMounted, ref } from "vue";
+import { formatMoney } from "../utils/money";
 import { useRoute } from "vue-router";
 import AdminNavigation from "../components/AdminNavigation.vue";
 import PatientMaterials from "../components/PatientMaterials.vue";
@@ -215,6 +216,16 @@ onMounted(load);
       </ul>
       <p v-else>No hay citas registradas para este paciente.</p>
       <p>La baja del paciente conserva sus citas y asociaciones.</p>
+    </section>
+    <section v-if="canManage" class="record-section">
+      <h2>Pagos del paciente</h2>
+      <p v-if="!patient.pagos?.length">No hay pagos registrados.</p>
+      <ul v-else class="admin-services"><li v-for="pago in patient.pagos.slice(0, 5)" :key="pago._id">
+        <strong>{{ formatMoney(pago.montoCentavos) }} · {{ pago.metodo }} · {{ pago.estado }}</strong>
+        <p>{{ new Date(pago.registradoEn).toLocaleString('es-GT', { timeZone: 'America/Guatemala' }) }}</p>
+        <RouterLink :to="'/admin/pagos/' + pago._id + '/comprobante'">Ver comprobante</RouterLink>
+      </li></ul>
+      <RouterLink :to="{ path: '/admin/pagos', query: { paciente: route.params.id } }">Ver historial completo y saldos</RouterLink>
     </section>
     <PatientMaterials
       :patient-id="String(route.params.id)"
