@@ -155,7 +155,7 @@ test('pacientes validan nacimiento y asociaciones preservan parentesco sin dupli
   const guardianResponse = await call('/api/responsables', {
     method: 'POST',
     token: admin,
-    body: JSON.stringify({ identificador: `TEST-RES-${suffix}`, nombres: 'Responsable', apellidos: 'Prueba', telefono: '55550000', correo: `responsable-${suffix}@sigca.test` }),
+    body: JSON.stringify({ identificador: `TEST-RES-${suffix}`, nombres: 'Responsable', apellidos: 'Prueba', telefono: '55550000', correo: `responsable-${suffix}@sigca.test`, fotografia: '/images/persona.svg', direccion: 'Dirección de prueba' }),
   });
   assert.equal(guardianResponse.status, 201);
   createdGuardian = await Responsable.findById(guardianResponse.body._id);
@@ -168,4 +168,19 @@ test('pacientes validan nacimiento y asociaciones preservan parentesco sin dupli
   assert.equal(patientDetail.body.tieneResponsable, true);
   assert.equal(patientDetail.body.responsables[0].parentesco, 'Tía');
   assert.equal(await ResponsablePaciente.countDocuments({ paciente: createdPatient._id, responsable: createdGuardian._id }), 1);
+});
+
+
+test('responsables exigen fotografía, correo y dirección al registrar y editar (RF-04)', async () => {
+  const token = signToken(String(users[0]._id), { secret });
+  const valid = { identificador: `TEST-REQ-${suffix}`, nombres: 'Tutor', apellidos: 'Prueba', telefono: '55550000', fotografia: '/images/persona.svg', correo: 'tutor@sigca.test', direccion: 'Dirección de prueba' };
+  for (const field of ['fotografia', 'correo', 'direccion']) {
+    const missing = { ...valid }; delete missing[field];
+    const response = await call('/api/responsables', { method: 'POST', token, body: JSON.stringify(missing) });
+    assert.equal(response.status, 400);
+    assert.ok(response.body.fields[field]);
+    const update = await call(`/api/responsables/${createdGuardian._id}`, { method: 'PUT', token, body: JSON.stringify({ [field]: '' }) });
+    assert.equal(update.status, 400);
+  }
+  assert.equal((await call(`/api/responsables/${createdGuardian._id}`, { method: 'PUT', token, body: JSON.stringify({ direccion: 'Dirección actualizada' }) })).status, 200);
 });

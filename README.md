@@ -312,7 +312,7 @@ Ejecuta en orden `seed:servicios`, `seed:solicitudes`, `seed:agenda-provisional`
 
 ### Integración de usuarios, pacientes y responsables
 
-Los modelos de `Paciente` y `Usuario` son definitivos y conservan sus colecciones y referencias MongoDB. `seed:agenda-provisional` se mantiene como alias compatible para los ejemplos del equipo, pero crea registros completos y responsables persistidos. En una base anterior, ejecuta primero `npm run migrate:people` con el servidor detenido. La regla RN-27 está en `backend/src/services/pagosCitas.js` y queda preparada para el futuro módulo de pagos.
+Los modelos de `Paciente` y `Usuario` son definitivos y conservan sus colecciones y referencias MongoDB. `seed:agenda-provisional` se mantiene como alias compatible para los ejemplos del equipo, pero crea registros completos y responsables persistidos. En una base anterior, ejecuta primero `npm run migrate:people` con el servidor detenido. La regla RN-27 está integrada con pagos: una cita con pagos válidos no puede cancelarse.
 
 ### Endpoints
 
@@ -390,12 +390,12 @@ Lee [la guía financiera](docs/caja-diaria.md) antes de actualizar una base exis
 
 ## Equipo y módulos
 
-| Cuenta de GitHub | Módulo asignado |
-| --- | --- |
-| LuisCaGt | Portal público, servicios, contenido y configuración inicial |
-| AlejoGarcia7 | Autenticación, usuarios, pacientes y responsables |
-| Drk1xr | Solicitudes, citas, calendario y materiales |
-| iliana233 | Pagos y caja diaria |
+| Integrante | Cuenta de GitHub | Módulo asignado |
+| --- | --- | --- |
+| Luis Carlos Lee Mejia | LuisCaGt | Portal público, servicios, contenido y configuración inicial |
+| Alejandro Garcia | AlejoGarcia7 | Autenticación, usuarios, pacientes y responsables |
+| Wilson Alexander Luis | Drk1xr | Solicitudes, citas, calendario y materiales |
+| Iliana Yuridia Orellana Marroquin | iliana233 | Pagos y caja diaria |
 
 Los commits conservan la autoría de cada contribución y de las correcciones posteriores.
 
@@ -427,3 +427,12 @@ npm run test:integration
 Desde `frontend`, ejecutar `npm run build`. Las pruebas de finanzas y materiales crean sus propias bases temporales; las pruebas de autenticación necesitan `MONGODB_URI_TEST`. No apuntar las pruebas a la base de uso diario. Las colecciones `docs/*.postman_collection.json` incluyen consultas, validaciones y operaciones de cada módulo; usar cuentas y datos ficticios.
 
 Para el ZIP de entrega se incluyen únicamente los archivos versionados, sin `.env`, datos de MongoDB, `.git`, `node_modules` ni archivos compilados. La base se reconstruye con la configuración privada y `seed:all`.
+
+
+## Responsables y entrega final
+
+El registro de responsables exige identificador, fotografía (URL HTTP/HTTPS o ruta `/images/`), nombres, apellidos, teléfono, correo y dirección. El parentesco se exige al asociar el responsable al paciente, porque puede variar entre pacientes. Al editar un registro anterior incompleto se deben completar los campos faltantes; no se generan datos personales automáticamente. Los scripts demo solo completan valores vacíos de sus propios ejemplos ficticios y conservan las ediciones existentes.
+
+Importar `docs/SIGCA-personas.postman_collection.json` para comprobar autenticación, usuarios, restablecimiento, permisos, pacientes, responsables, parentescos y bajas lógicas. Configurar `password` con `DEMO_SEED_PASSWORD` y ejecutar las solicitudes en orden con Collection Runner, sobre una base de demostración. Los registros ficticios creados se conservan para demostrar el historial; el usuario y el paciente terminan inactivos. Cada ejecución utiliza identificadores nuevos.
+
+Consultar [la guía de entrega y defensa](docs/ENTREGA.md) y las capturas de `docs/evidencias/`.

@@ -37,7 +37,10 @@ try {
       nombres, apellidos, fechaNacimiento: new Date(`${fecha}T00:00:00Z`), estado,
     } }, { upsert: true, returnDocument: 'after', runValidators: true });
     if (responsable) {
-      const guardian = await Responsable.findOneAndUpdate({ identificador: 'AGENDA-RES-001' }, { $setOnInsert: { nombres: 'Responsable', apellidos: 'Ejemplo de agenda', telefono: '55550099' } }, { upsert: true, returnDocument: 'after', runValidators: true });
+      const guardian = await Responsable.findOneAndUpdate({ identificador: 'AGENDA-RES-001' }, { $setOnInsert: { nombres: 'Responsable', apellidos: 'Ejemplo de agenda', telefono: '55550099', correo: 'tutor.agenda@sigca.test', fotografia: '/images/persona.svg', direccion: 'Dirección ficticia de demostración, Guatemala' } }, { upsert: true, returnDocument: 'after', runValidators: true });
+      for (const [campo, valor] of Object.entries({ fotografia: '/images/persona.svg', correo: 'tutor.agenda@sigca.test', direccion: 'Dirección ficticia de demostración, Guatemala' })) {
+        await Responsable.updateOne({ _id: guardian._id, $or: [{ [campo]: '' }, { [campo]: null }, { [campo]: { $exists: false } }] }, { $set: { [campo]: valor } }, { runValidators: true });
+      }
       await ResponsablePaciente.updateOne({ paciente: paciente._id, responsable: guardian._id }, { $setOnInsert: { parentesco: 'Tutor' } }, { upsert: true, runValidators: true });
     }
   }

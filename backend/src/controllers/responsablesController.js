@@ -15,7 +15,7 @@ function validateBody(body, partial = false) {
   if (!body || typeof body !== 'object' || Array.isArray(body)) invalid('Envía un objeto JSON.');
   const fields = {};
   for (const key of Object.keys(body)) if (!keys.includes(key)) fields[key] = 'Campo no permitido.';
-  for (const key of ['identificador', 'nombres', 'apellidos', 'telefono']) {
+  for (const key of ['identificador', 'fotografia', 'nombres', 'apellidos', 'telefono', 'correo', 'direccion']) {
     if (!partial && (typeof body[key] !== 'string' || !body[key].trim())) fields[key] = 'Campo obligatorio.';
     if (partial && body[key] !== undefined && (typeof body[key] !== 'string' || !body[key].trim())) fields[key] = 'Campo inválido.';
   }
@@ -42,7 +42,11 @@ export async function createGuardian(req, res) {
 
 export async function updateGuardian(req, res) {
   validateId(req.params.id);
-  const data = validateBody(req.body, true);
+  validateBody(req.body, true);
+  const current = await Responsable.findById(req.params.id).lean();
+  if (!current) return res.status(404).json({ message: 'Responsable no encontrado.' });
+  validateBody(Object.fromEntries(keys.map(key => [key, req.body[key] ?? current[key]])));
+  const data = req.body;
   const guardian = await Responsable.findByIdAndUpdate(req.params.id, { $set: data }, { returnDocument: 'after', runValidators: true });
   if (!guardian) return res.status(404).json({ message: 'Responsable no encontrado.' });
   res.json(guardian);

@@ -59,9 +59,16 @@ try {
   )));
   const guardians = await Promise.all(guardianSeed.map(([identificador, nombres, apellidos, telefono, correo]) => Responsable.findOneAndUpdate(
     { identificador },
-    { $setOnInsert: { nombres, apellidos, telefono, correo, fotografia: '/images/persona.svg', direccion: '' } },
+    { $setOnInsert: { nombres, apellidos, telefono, correo, fotografia: '/images/persona.svg', direccion: 'Dirección ficticia de demostración, Guatemala' } },
     { upsert: true, returnDocument: 'after', runValidators: true },
   )));
+
+  // Completa únicamente campos vacíos de estos ejemplos; conserva los valores editados.
+  for (const [identificador, nombres, apellidos, telefono, correo] of guardianSeed) {
+    for (const [campo, valor] of Object.entries({ fotografia: '/images/persona.svg', correo, direccion: 'Dirección ficticia de demostración, Guatemala' })) {
+      await Responsable.updateOne({ identificador, nombres, apellidos, $or: [{ [campo]: '' }, { [campo]: null }, { [campo]: { $exists: false } }] }, { $set: { [campo]: valor } }, { runValidators: true });
+    }
+  }
 
   for (const [patientIndex, guardianIndex, parentesco] of [[0, 0, 'Madre'], [2, 1, 'Padre'], [3, 2, 'Tutora'], [5, 3, 'Madre'], [7, 0, 'Madre'], [8, 4, 'Padre']]) {
     await ResponsablePaciente.updateOne(

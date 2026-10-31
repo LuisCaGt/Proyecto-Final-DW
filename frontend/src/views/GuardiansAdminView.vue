@@ -122,6 +122,7 @@ onMounted(load);
           ><input
             id="guardian-photo"
             v-model.trim="form.fotografia"
+            required
             placeholder="/images/responsable.jpg"
             maxlength="2048"
           />
@@ -157,6 +158,7 @@ onMounted(load);
           ><input
             id="guardian-email"
             v-model.trim="form.correo"
+            required
             type="email"
             maxlength="254"
           />
@@ -164,8 +166,12 @@ onMounted(load);
           ><input
             id="guardian-address"
             v-model.trim="form.direccion"
+            required
             maxlength="300"
           />
+          <ul v-if="Object.keys(fields).length" class="error" role="alert">
+            <li v-for="(message, field) in fields" :key="field">{{ message }}</li>
+          </ul>
           <div class="actions">
             <button class="button" type="submit">
               {{

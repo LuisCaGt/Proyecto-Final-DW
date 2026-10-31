@@ -40,7 +40,7 @@ before(async () => {
     { identificador: 'MENOR', nombres: 'Menor', apellidos: 'Prueba', fechaNacimiento: `${Number(todayInGuatemala().slice(0,4))-8}-01-01`, sexo: 'OTRO' },
     { identificador: 'INACTIVO', nombres: 'Inactivo', apellidos: 'Prueba', fechaNacimiento: '1990-01-01', sexo: 'OTRO', estado: 'INACTIVO' },
   ]);
-  guardian = await Responsable.create({ identificador: 'RESP', nombres: 'Tutor', apellidos: 'Prueba', telefono: '55550000' });
+  guardian = await Responsable.create({ identificador: 'RESP', nombres: 'Tutor', apellidos: 'Prueba', telefono: '55550000', correo: 'tutor@sigca.test', fotografia: '/images/persona.svg', direccion: 'Dirección de prueba' });
   service = await Servicio.create({ nombre: 'Servicio prueba', descripcion: 'Prueba de integración', duracionMinutos: 30, precioCentavos: 10000, imagen: '/images/servicio.svg' });
   const future = new Date(`${todayInGuatemala()}T12:00:00Z`);
   future.setUTCDate(future.getUTCDate()+7);

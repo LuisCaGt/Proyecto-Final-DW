@@ -1,0 +1,855 @@
+{
+  "info": {
+    "name": "SIGCA — Autenticación, usuarios, pacientes y responsables",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Ejecutar en una base exclusiva de demostración con seed:all. Configurar password con DEMO_SEED_PASSWORD. El Runner registra datos ficticios únicos, los conserva para demostrar historial y termina desactivando el paciente y usuario creados. No usar con datos reales. Cada ejecución tiene un identificador nuevo. Las contraseñas de prueba son ficticias y configurables."
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://127.0.0.1:3000",
+      "type": "string"
+    },
+    {
+      "key": "adminEmail",
+      "value": "admin@sigca.test",
+      "type": "string"
+    },
+    {
+      "key": "password",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "demoUserPassword",
+      "value": "Postman-Prueba-2026!",
+      "type": "string"
+    },
+    {
+      "key": "resetPassword",
+      "value": "Postman-Restablecida-2026!",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "professionalToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "runId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "userId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "patientId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "guardianId",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "01 Iniciar sesión administrador",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/api/auth/login",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "auth": {
+          "type": "noauth"
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"correo\": \"{{adminEmail}}\", \"password\": \"{{password}}\"}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.collectionVariables.set(\"runId\", Date.now().toString() + Math.floor(Math.random()*100000));"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+              "if (pm.response.code === 200) pm.collectionVariables.set(\"token\", pm.response.json().token);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "02 Sesión actual",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/auth/me",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ]
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+              "pm.test(\"Sin contraseñas ni hashes\", () => { pm.expect(pm.response.text()).not.to.include(\"passwordHash\"); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "03 Listar usuarios",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/usuarios",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ]
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+              "pm.test(\"Sin contraseñas ni hashes\", () => { pm.expect(pm.response.text()).not.to.include(\"passwordHash\"); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "04 Registrar usuario",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/api/usuarios",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"identificador\": \"PM-USR-{{runId}}\", \"nombres\": \"Profesional\", \"apellidos\": \"Prueba Postman\", \"correo\": \"pm-{{runId}}@sigca.test\", \"telefono\": \"55550001\", \"rol\": \"PROFESIONAL\", \"password\": \"{{demoUserPassword}}\", \"especialidad\": \"Prueba académica\"}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 201\", () => pm.response.to.have.status(201));",
+              "if (pm.response.code === 201) pm.collectionVariables.set(\"userId\", pm.response.json().id);",
+              "pm.test(\"Sin contraseñas ni hashes\", () => { pm.expect(pm.response.text()).not.to.include(\"passwordHash\"); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "05 Editar usuario",
+      "request": {
+        "method": "PUT",
+        "url": "{{baseUrl}}/api/usuarios/{{userId}}",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"especialidad\": \"Especialidad actualizada\"}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+              "pm.test(\"Sin contraseñas ni hashes\", () => { pm.expect(pm.response.text()).not.to.include(\"passwordHash\"); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "06 Restablecer contraseña",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/api/usuarios/{{userId}}/restablecer-password",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"password\": \"{{resetPassword}}\"}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "07 Iniciar sesión profesional",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/api/auth/login",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "auth": {
+          "type": "noauth"
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"correo\": \"pm-{{runId}}@sigca.test\", \"password\": \"{{resetPassword}}\"}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+              "if (pm.response.code === 200) pm.collectionVariables.set(\"professionalToken\", pm.response.json().token);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "08 Profesional no administra usuarios",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/usuarios",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{professionalToken}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 403\", () => pm.response.to.have.status(403));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "09 Registrar paciente",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/api/pacientes",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"identificador\": \"PM-PAC-{{runId}}\", \"nombres\": \"Paciente\", \"apellidos\": \"Prueba Postman\", \"fechaNacimiento\": \"2015-06-15\", \"sexo\": \"FEMENINO\", \"fotografia\": \"/images/persona.svg\", \"telefono\": \"55550002\", \"direccion\": \"Dirección ficticia, Guatemala\", \"fechaInicioProceso\": \"2026-01-01\", \"observacionesAdministrativas\": \"Registro ficticio de pruebas\", \"profesionales\": [\"{{userId}}\"]}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 201\", () => pm.response.to.have.status(201));",
+              "if (pm.response.code === 201) pm.collectionVariables.set(\"patientId\", pm.response.json().id);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "10 Buscar paciente",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/pacientes?buscar=PM-PAC-{{runId}}",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ]
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "11 Consultar paciente y edad",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/pacientes/{{patientId}}",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ]
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+              "pm.test(\"Edad calculada\", () => pm.expect(pm.response.json().edad).to.be.a(\"number\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "12 Editar paciente",
+      "request": {
+        "method": "PUT",
+        "url": "{{baseUrl}}/api/pacientes/{{patientId}}",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"telefono\": \"55550003\"}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "13 Registrar responsable",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/api/responsables",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"identificador\": \"PM-RES-{{runId}}\", \"fotografia\": \"/images/persona.svg\", \"nombres\": \"Responsable\", \"apellidos\": \"Prueba Postman\", \"telefono\": \"55550004\", \"correo\": \"tutor-{{runId}}@sigca.test\", \"direccion\": \"Dirección ficticia de demostración\"}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 201\", () => pm.response.to.have.status(201));",
+              "if (pm.response.code === 201) pm.collectionVariables.set(\"guardianId\", pm.response.json()._id);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "14 Buscar responsable",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/responsables?buscar=PM-RES-{{runId}}",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ]
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "15 Editar responsable",
+      "request": {
+        "method": "PUT",
+        "url": "{{baseUrl}}/api/responsables/{{guardianId}}",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"direccion\": \"Dirección ficticia actualizada\"}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "16 Asociar responsable y parentesco",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/api/pacientes/{{patientId}}/responsables",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"responsableId\": \"{{guardianId}}\", \"parentesco\": \"Tutor\"}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 201\", () => pm.response.to.have.status(201));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "17 Consultar responsables del paciente",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/pacientes/{{patientId}}/responsables",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ]
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+              "pm.test(\"Parentesco persistido\", () => pm.expect(pm.response.json()[0].parentesco).to.eql(\"Tutor\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "18 Consultar pacientes del responsable",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/responsables/{{guardianId}}",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ]
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+              "pm.test(\"Paciente asociado\", () => pm.expect(pm.response.json().pacientes).to.have.lengthOf(1));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "19 Rechazar responsable sin campos obligatorios",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/api/responsables",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"identificador\": \"INVALID-{{runId}}\", \"nombres\": \"Inválido\", \"apellidos\": \"Prueba\", \"telefono\": \"55550000\"}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 400\", () => pm.response.to.have.status(400));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "20 Rechazar eliminación de dirección",
+      "request": {
+        "method": "PUT",
+        "url": "{{baseUrl}}/api/responsables/{{guardianId}}",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"direccion\": \"\"}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 400\", () => pm.response.to.have.status(400));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "21 Desactivar paciente sin borrarlo",
+      "request": {
+        "method": "PATCH",
+        "url": "{{baseUrl}}/api/pacientes/{{patientId}}/estado",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"estado\": \"INACTIVO\"}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "22 Historial del paciente permanece",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/pacientes/{{patientId}}",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ]
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+              "pm.test(\"Baja lógica\", () => pm.expect(pm.response.json().estado).to.eql(\"INACTIVO\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "23 Desactivar usuario de prueba",
+      "request": {
+        "method": "PATCH",
+        "url": "{{baseUrl}}/api/usuarios/{{userId}}/estado",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"estado\": \"INACTIVO\"}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "24 Cuenta inactiva no inicia sesión",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/api/auth/login",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "auth": {
+          "type": "noauth"
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"correo\": \"pm-{{runId}}@sigca.test\", \"password\": \"{{resetPassword}}\"}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 401\", () => pm.response.to.have.status(401));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "25 Anónimo no consulta pacientes",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/pacientes",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "auth": {
+          "type": "noauth"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 401\", () => pm.response.to.have.status(401));"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
