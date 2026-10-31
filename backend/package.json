@@ -22,7 +22,8 @@
     "migrate:finanzas": "node scripts/migrateFinanzas.js",
     "test:finanzas": "node --test test/finanzas.integration.test.js",
     "seed:materiales": "node scripts/seedMateriales.js",
-    "test:materiales": "node --test test/materiales.integration.test.js"
+    "test:materiales": "node --test test/materiales.integration.test.js",
+    "seed:all": "node scripts/seedAll.js"
   },
   "keywords": [],
   "author": "",

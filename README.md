@@ -387,3 +387,43 @@ Tipos: DOCUMENTO, VIDEO, AUDIO, EJERCICIO, ENLACE y OTRO. Las asignaciones se gu
 Administración y recepción disponen de `/admin/pagos` para abonos, saldos, filtros e historial por paciente y comprobantes imprimibles, y `/admin/caja` para apertura, movimientos, cierre e historial. Los pagos válidos no pueden superar el precio histórico de la cita. Las anulaciones requieren motivo y caja abierta; recepción opera sobre su propia caja. Los cierres guardan totales por método y diferencia de efectivo.
 
 Lee [la guía financiera](docs/caja-diaria.md) antes de actualizar una base existente. Incluye configuración de replica set, migración, datos de demostración, API y pruebas.
+
+## Equipo y módulos
+
+| Cuenta de GitHub | Módulo asignado |
+| --- | --- |
+| LuisCaGt | Portal público, servicios, contenido y configuración inicial |
+| AlejoGarcia7 | Autenticación, usuarios, pacientes y responsables |
+| Drk1xr | Solicitudes, citas, calendario y materiales |
+| iliana233 | Pagos y caja diaria |
+
+Los commits conservan la autoría de cada contribución y de las correcciones posteriores.
+
+## Carga completa de demostración
+
+En una base nueva con replica set o Atlas y `DEMO_SEED_PASSWORD` configurada, ejecutar desde `backend`:
+
+```bash
+npm run seed:all
+```
+
+El comando carga en orden usuarios, pacientes, responsables, servicios, publicaciones, actividades, contacto, solicitudes, citas, pagos, cajas, materiales, contenido institucional y horarios. En una base nueva genera al menos los mínimos del enunciado. Repetirlo el mismo día no duplica registros; las citas de demostración usan fechas relativas al día de ejecución. No se debe usar con datos reales ni en producción. Las migraciones de bases anteriores se ejecutan antes, según las guías de personas y finanzas.
+
+Los profesionales completan sus citas confirmadas e iniciadas desde el detalle del calendario. El servidor verifica la titularidad, el estado y la hora; no permite confirmar, cancelar o completar citas ajenas con ese rol. La reprogramación exige que paciente, profesional y servicio sigan activos, además de las reglas de horarios y responsables.
+
+La ficha administrativa incluye el historial de citas, pagos, comprobantes y materiales asignados. Los selectores de materiales tienen paginación para consultar todo el catálogo. Las capturas de demostración están en `docs/evidencias`.
+
+## Comprobación antes de entregar
+
+Desde `backend`:
+
+```bash
+npm test
+npm run test:caja
+# Configurar MONGODB_URI_TEST con una base exclusiva cuyo nombre termine en _test.
+npm run test:integration
+```
+
+Desde `frontend`, ejecutar `npm run build`. Las pruebas de finanzas y materiales crean sus propias bases temporales; las pruebas de autenticación necesitan `MONGODB_URI_TEST`. No apuntar las pruebas a la base de uso diario. Las colecciones `docs/*.postman_collection.json` incluyen consultas, validaciones y operaciones de cada módulo; usar cuentas y datos ficticios.
+
+Para el ZIP de entrega se incluyen únicamente los archivos versionados, sin `.env`, datos de MongoDB, `.git`, `node_modules` ni archivos compilados. La base se reconstruye con la configuración privada y `seed:all`.

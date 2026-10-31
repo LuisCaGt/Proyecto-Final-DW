@@ -44,6 +44,7 @@ La contraseña es el valor local de `DEMO_SEED_PASSWORD`; no hay clave fija en e
 | Consultar pacientes | No | Todos | Todos | Básicos, activos y vinculados |
 | Gestionar solicitudes y citas | No | Sí | Sí | No |
 | Consultar citas y calendario | No | Todas | Todas | Solo propias, sin importes |
+| Completar citas iniciadas | No | Sí | Sí | Solo propias confirmadas |
 
 - `requireAuth` y `authorizeRoles` están en `backend/src/middleware/auth.js`. El servidor obtiene identidad, estado y rol actual de MongoDB en cada petición; no confía en roles o identificadores de usuario enviados por el navegador.
 - `POST /api/auth/login` recibe `correo` y `password`; devuelve `token` y usuario sin hash. `GET /api/auth/me` recupera la sesión.
@@ -78,3 +79,5 @@ Las pruebas usan cuentas ficticias. La suite de agenda crea una base separada co
 Desde `frontend`, ejecutar `npm run build`. En Postman, configurar `token` en las colecciones con el JWT obtenido al iniciar sesión.
 
 Comprobación manual: iniciar sesión con los tres roles, editar y volver a crear pacientes/responsables, asociar el mismo responsable a varios pacientes, recargar una ruta privada, abrir calendario profesional, cerrar sesión y verificar el rechazo de rutas privadas.
+
+El profesional completa sus citas desde el detalle del calendario. La API valida rol, titularidad, transición de estado e inicio de la atención; las rutas de programación y reprogramación siguen reservadas a administración y recepción.
