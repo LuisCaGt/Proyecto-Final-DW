@@ -2,6 +2,7 @@
 import { computed, onMounted, ref } from "vue";
 import { useRoute } from "vue-router";
 import AdminNavigation from "../components/AdminNavigation.vue";
+import PatientMaterials from "../components/PatientMaterials.vue";
 import { request } from "../services/api";
 import { useAuthStore } from "../stores/auth";
 
@@ -215,5 +216,9 @@ onMounted(load);
       <p v-else>No hay citas registradas para este paciente.</p>
       <p>La baja del paciente conserva sus citas y asociaciones.</p>
     </section>
+    <PatientMaterials
+      :patient-id="String(route.params.id)"
+      :patient-active="patient.estado === 'ACTIVO'"
+    />
   </section>
 </template>

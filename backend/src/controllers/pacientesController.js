@@ -7,6 +7,7 @@ import { isImageUrl } from '../models/Servicio.js';
 import { Cita } from '../models/Cita.js';
 import { filtroPacientesProfesional } from '../services/dependenciasCitas.js';
 import { ageAt, todayInGuatemala } from '../utils/fechas.js';
+import { listarMaterialesAsignados } from '../services/materialesPaciente.js';
 
 const editableFields = ['identificador', 'fotografia', 'nombres', 'apellidos', 'fechaNacimiento', 'sexo', 'telefono', 'direccion', 'fechaInicioProceso', 'observacionesAdministrativas', 'estado', 'profesionales'];
 const sexes = ['FEMENINO', 'MASCULINO', 'OTRO', 'PREFIERO_NO_DECIR'];
@@ -132,7 +133,7 @@ export async function getPatient(req, res) {
     tieneResponsable: links.some(link => link.responsable),
     menorDeEdad: calculateAge(patient.fechaNacimiento) < 18,
     citas: await Cita.find({ paciente: patient._id }).sort({ inicio: -1 }).populate('profesional', 'nombres apellidos').populate('servicio', 'nombre').lean(),
-    materialesAsignados: [],
+    materialesAsignados: await listarMaterialesAsignados(patient._id),
     pagos: [],
   });
 }

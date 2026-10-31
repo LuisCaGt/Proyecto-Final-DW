@@ -20,7 +20,9 @@
     "test:caja": "node --test test/caja.calculo.test.js",
     "mongo:local": "node scripts/mongoLocal.js",
     "migrate:finanzas": "node scripts/migrateFinanzas.js",
-    "test:finanzas": "node --test test/finanzas.integration.test.js"
+    "test:finanzas": "node --test test/finanzas.integration.test.js",
+    "seed:materiales": "node scripts/seedMateriales.js",
+    "test:materiales": "node --test test/materiales.integration.test.js"
   },
   "keywords": [],
   "author": "",

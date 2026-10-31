@@ -15,6 +15,7 @@ import { citasRouter } from './routes/citasRoutes.js';
 import { cajasRouter } from './routes/cajasRoutes.js';
 export const app = express();
 import { pagosRouter } from './routes/pagosRoutes.js';
+import { materialesRouter, materialesPacienteRouter } from './routes/materialesRoutes.js';
 app.disable('x-powered-by');
 app.use(cors({ origin: process.env.FRONTEND_URL || 'http://localhost:5173' }));
 app.use(express.json({ limit: '1mb' }));
@@ -31,6 +32,7 @@ app.use('/api/auth', authRouter);
 app.use('/api/usuarios', usuariosRouter);
 app.use('/api/profesionales', profesionalesRouter);
 app.use('/api/pacientes', pacientesRouter);
+app.use('/api/pacientes', materialesPacienteRouter);
 app.use('/api/responsables', responsablesRouter);
 
 const publications = editorialRoutes(true);
@@ -49,6 +51,7 @@ app.use('/api/solicitudes-cita', solicitudesRouter);
 app.use('/api/citas', citasRouter);
 app.use('/api/cajas', cajasRouter);
 app.use('/api/pagos', pagosRouter);
+app.use('/api/materiales', materialesRouter);
 app.use((req, res) => res.status(404).json({ message: 'Ruta no encontrada' }));
 app.use((error, req, res, next) => {
   if (error.code === 20 || error.codeName === 'IllegalOperation') return res.status(503).json({ message: 'Pagos y caja requieren MongoDB replica set. Consulta docs/caja-diaria.md.' });

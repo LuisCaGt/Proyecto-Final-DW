@@ -21,6 +21,7 @@ Sistema Integral de Gestión de Citas y Atención, una aplicación web académic
 - Solicitudes de cita desde el portal, bandeja administrativa, rechazo y conversión en cita.
 - Citas: programación con reglas de agenda, confirmación, reprogramación, cancelación, completado, historial por paciente y filtros.
 - Calendario mensual de citas con FullCalendar.
+- Materiales de apoyo: catálogo administrable y asignación a pacientes desde su ficha.
 
 Autenticación JWT, usuarios por rol, pacientes y responsables integrados con citas y calendario. Consulta [la guía de autenticación e integración](docs/AUTENTICACION-PACIENTES.md) antes de iniciar: incluye configuración, migración de datos anteriores, cuentas demo y pruebas.
 
@@ -335,6 +336,44 @@ Reglas aplicadas en el backend: RN-01 a RN-07, RN-11 a RN-14, RN-27 (preparada) 
 ### Pruebas
 
 Importa `docs/SIGCA-solicitudes-citas.postman_collection.json`, configura la variable `token` con una sesión de ADMINISTRADOR o RECEPCIONISTA y ejecútala completa con el Collection Runner. La primera petición calcula las fechas y obtiene los identificadores de los datos de demostración; cada ejecución usa una fecha futura distinta.
+
+## Materiales de apoyo
+
+Recursos educativos o de apoyo que el centro asigna a sus pacientes (RF-09). Son distintos de las publicaciones educativas del portal público. No se almacenan archivos: cada material guarda el enlace donde está publicado el recurso.
+
+### Pantallas y permisos
+
+- `/admin/materiales`: el ADMINISTRADOR registra, edita, busca, filtra y activa o desactiva materiales. El PROFESIONAL consulta los materiales activos.
+- Ficha del paciente (`/admin/pacientes/:id`), sección **Materiales asignados**: el ADMINISTRADOR y el PROFESIONAL asignan materiales activos; la RECEPCIONISTA solo consulta. El profesional solo accede a sus pacientes (asignados a él o con citas suyas).
+
+### Datos de demostración
+
+Desde `backend/`, después de `npm run seed:demo`:
+
+```bash
+npm run seed:materiales
+```
+
+Carga 6 materiales (uno inactivo) y 5 asignaciones a pacientes de demostración, incluida una histórica de un paciente inactivo. Repetirlo no duplica datos.
+
+### Endpoints
+
+| Método | Ruta | Función | Roles |
+| --- | --- | --- | --- |
+| GET | /api/materiales | Catálogo con filtros `buscar`, `tipo`, `estado`, `pagina`, `limite` | Administrador; profesional (solo activos) |
+| GET | /api/materiales/:id | Detalle | Administrador; profesional (solo activos) |
+| POST | /api/materiales | Registrar | Administrador |
+| PUT | /api/materiales/:id | Editar identificador, título, descripción, tipo y enlace | Administrador |
+| PATCH | /api/materiales/:id/estado | Activar o desactivar | Administrador |
+| GET | /api/pacientes/:id/materiales | Materiales asignados al paciente | Administrador, recepcionista, profesional autorizado |
+| POST | /api/pacientes/:id/materiales | Asignar un material (`material`, `observaciones` opcional) | Administrador, profesional autorizado |
+
+Tipos: DOCUMENTO, VIDEO, AUDIO, EJERCICIO, ENLACE y OTRO. Las asignaciones se guardan en `asignacionesMateriales` con el material, el paciente, quién asignó y la fecha. Reglas: solo pacientes activos (RN-09) y materiales activos; un mismo material no se asigna dos veces al mismo paciente, aunque lleguen dos solicitudes a la vez (índice único); desactivar un material no borra las asignaciones anteriores. La ficha del paciente (`GET /api/pacientes/:id`) incluye `materialesAsignados`.
+
+### Pruebas
+
+- `npm run test:materiales` levanta un MongoDB temporal y verifica catálogo, permisos por rol, RN-09, duplicados, concurrencia e historial.
+- Importa `docs/SIGCA-materiales.postman_collection.json`, escribe en la variable `password` de la colección la contraseña de `DEMO_SEED_PASSWORD` y ejecútala completa con el Collection Runner.
 
 ## Referencias
 

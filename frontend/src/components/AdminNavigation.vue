@@ -15,6 +15,7 @@ const auth = useAuthStore();
       <RouterLink to="/admin/contacto">Contacto</RouterLink>
       <RouterLink to="/admin/mensajes">Mensajes</RouterLink>
       <RouterLink to="/admin/usuarios">Usuarios</RouterLink>
+      <RouterLink to="/admin/materiales">Materiales</RouterLink>
     </template>
     <template v-if="auth.canManagePeople">
       <RouterLink to="/admin/solicitudes">Solicitudes de cita</RouterLink>
@@ -24,9 +25,10 @@ const auth = useAuthStore();
       <RouterLink to="/admin/pacientes">Pacientes</RouterLink>
       <RouterLink to="/admin/responsables">Responsables</RouterLink>
     </template>
-    <RouterLink v-if="auth.user?.rol === 'PROFESIONAL'" to="/mis-pacientes"
-      >Mis pacientes</RouterLink
-    >
+    <template v-if="auth.user?.rol === 'PROFESIONAL'">
+      <RouterLink to="/mis-pacientes">Mis pacientes</RouterLink>
+      <RouterLink to="/admin/materiales">Materiales</RouterLink>
+    </template>
     <RouterLink v-if="auth.authenticated" to="/admin/calendario">Calendario</RouterLink>
   </nav>
 </template>

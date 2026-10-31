@@ -37,6 +37,7 @@ const router = createRouter({
     { path: '/solicitar-cita', name: 'solicitar-cita', component: () => import('../views/AppointmentRequestView.vue') },
     { path: '/admin/calendario', name: 'admin-calendario', component: () => import('../views/CalendarAdminView.vue'), meta: { roles: ['ADMINISTRADOR', 'RECEPCIONISTA', 'PROFESIONAL'] } },
     { path: '/admin/citas', name: 'admin-citas', component: () => import('../views/AppointmentsAdminView.vue'), meta: { roles: ['ADMINISTRADOR', 'RECEPCIONISTA'] } },
+    { path: '/admin/materiales', name: 'admin-materiales', component: () => import('../views/MaterialsAdminView.vue'), meta: { roles: ['ADMINISTRADOR', 'PROFESIONAL'] } },
     { path: '/admin/solicitudes', name: 'admin-solicitudes', component: () => import('../views/RequestsAdminView.vue'), meta: { roles: ['ADMINISTRADOR', 'RECEPCIONISTA'] } },
     { path: '/:pathMatch(.*)*', component: NotFoundView },
   ],
