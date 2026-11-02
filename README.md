@@ -25,47 +25,53 @@ Sistema Integral de Gestión de Citas y Atención, una aplicación web orientada
 
 Autenticación JWT, usuarios por rol, pacientes y responsables integrados con citas y calendario. Consulta [la guía de autenticación e integración](docs/AUTENTICACION-PACIENTES.md) antes de iniciar: incluye configuración, migración de datos anteriores, cuentas demo y pruebas.
 
-## Requisitos
+## Inicio rápido
 
-- Node.js 22.12 o posterior (probado con Node.js 26.4).
-- npm.
-- MongoDB local o una base en MongoDB Atlas.
+Requiere **Node.js 22.12 o posterior** con npm e Internet para la preparación inicial. No es necesario instalar MongoDB por separado: el comando prepara un servidor local con datos persistentes.
 
-## Instalar y ejecutar
-
-Para pagos y caja se requiere MongoDB replica set o Atlas. En desarrollo local inicia primero `npm run mongo:local` desde `backend` en una terminal y déjala abierta. Después abre otras dos terminales para backend y frontend. Los datos locales persisten en `backend/.data/mongo`. Consulta [pagos y caja](docs/caja-diaria.md) para migración, cuentas y pruebas.
-
-### Terminal 1: backend
+Abrir una terminal en la carpeta principal del proyecto y ejecutar una sola vez:
 
 ```bash
-cd backend
-npm ci
-cp .env.example .env
-# Configura JWT_SECRET antes de iniciar (ver guía de autenticación).
-npm run dev
+npm run preparar
 ```
 
-Antes de ejecutar, revisa `backend/.env`. La URI de ejemplo requiere MongoDB ejecutándose localmente en el puerto 27017. Para Atlas, reemplaza `MONGODB_URI` por tu conexión real. Nunca subas ese archivo a GitHub.
+Este comando instala las dependencias, crea la configuración local, genera una clave JWT y carga los datos ficticios. La primera ejecución puede tardar varios minutos porque descarga MongoDB. Si ya existe `backend/.env`, conserva sus valores y credenciales.
 
-Variables:
-
-| Variable | Valor de ejemplo | Uso |
-| --- | --- | --- |
-| PORT | 3000 | Puerto de Express |
-| MONGODB_URI | mongodb://127.0.0.1:27017/sigca?replicaSet=sigca-local | Conexión a MongoDB |
-| FRONTEND_URL | http://localhost:5173 | Origen permitido por CORS |
-
-La API inicia únicamente si logra conectar con MongoDB. Si falla, revisa la URI y la disponibilidad de la base. La sesión requiere JWT_SECRET; las cuentas ficticias se cargan con `npm run seed:demo` y una contraseña elegida en DEMO_SEED_PASSWORD.
-
-### Terminal 2: frontend
+Para abrir la aplicación, ejecutar desde esa misma carpeta:
 
 ```bash
-cd frontend
-npm ci
-npm run dev
+npm start
 ```
 
-Abre http://localhost:5173. Vite redirige `/api` al backend en el puerto 3000. Si cambias el puerto de Express, actualiza también el proxy de `frontend/vite.config.js`.
+El comando inicia MongoDB, la API y la interfaz desde una sola terminal. Abrir la dirección que aparece en pantalla (por defecto `http://127.0.0.1:5173`). Mantener la terminal abierta; `Ctrl+C` detiene los procesos iniciados. Los registros se conservan para el siguiente arranque.
+
+### Cuentas de demostración
+
+En una instalación nueva preparada automáticamente, todas estas cuentas usan la contraseña **`Sigca-Demo-2026!`**:
+
+| Rol | Correo |
+| --- | --- |
+| Administrador | admin@sigca.test |
+| Recepcionista | recepcion1@sigca.test |
+| Recepcionista | recepcion2@sigca.test |
+| Profesional | profesional1@sigca.test |
+| Profesional | profesional2@sigca.test |
+| Profesional | profesional3@sigca.test |
+| Profesional con citas de ejemplo | laura.gomez@sigca.test |
+
+Entrar en **Iniciar sesión**, escribir el correo del rol y la contraseña. Estas credenciales son exclusivamente de demostración local. En instalaciones existentes, la contraseña sigue siendo la que se usó al crear las cuentas; `preparar` no restablece claves.
+
+### Configuración avanzada
+
+La configuración está en `backend/.env` (excluido del repositorio y del ZIP). Incluye `PORT`, `MONGODB_URI`, `FRONTEND_URL`, `JWT_SECRET` y `DEMO_SEED_PASSWORD`. La preparación nueva utiliza el puerto 27019 para MongoDB y 3000 para la API. Para usar Atlas o un replica set existente, configurar su URI. Nunca utilizar las cuentas de demostración en producción.
+
+Si el puerto de la interfaz está ocupado, detener la aplicación anterior o cambiar `FRONTEND_URL` a `http://127.0.0.1:5174`. El inicio respeta ese puerto. Si se cambia el puerto de la API, actualizar también el proxy en `frontend/vite.config.js`.
+
+Para generar la versión compilada de la interfaz:
+
+```bash
+npm run build
+```
 
 ## Verificación de funcionamiento
 

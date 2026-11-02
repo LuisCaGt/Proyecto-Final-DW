@@ -11,17 +11,11 @@
 
 Repositorio: https://github.com/LuisCaGt/Proyecto-Final-DW
 
-## Instalación desde una copia nueva
+## Instalación
 
-1. Instalar Node.js 22.12 o posterior y npm.
-2. En `backend`, ejecutar `npm ci`, copiar `.env.example` a `.env` y configurar `JWT_SECRET` (al menos 32 bytes aleatorios) y `DEMO_SEED_PASSWORD` (al menos 12 caracteres). La contraseña de demostración la elige quien instala; no hay una clave real publicada.
-3. Para la base local, ejecutar `npm run mongo:local` desde `backend` y mantener esa terminal abierta. Utiliza MongoDB con replica set y datos persistidos en `backend/.data/mongo`. También se puede utilizar Atlas y configurar su URI en `.env`.
-4. En otra terminal, desde `backend`, ejecutar `npm run seed:all` y después `npm run dev`.
-5. En otra terminal, desde `frontend`, ejecutar `npm ci` y `npm run dev`.
-6. Abrir `http://127.0.0.1:5173/`. Si el puerto está ocupado, liberar el servidor anterior o ejecutar `npm run dev -- --port 5174` y ajustar `FRONTEND_URL` en `.env` al origen elegido. El backend usa el puerto 3000.
-7. Iniciar sesión con `admin@sigca.test`, `recepcion1@sigca.test` o `profesional1@sigca.test`, usando el valor de `DEMO_SEED_PASSWORD` elegido al crear la base. `laura.gomez@sigca.test` permite consultar las citas ficticias adicionales de agenda.
+Desde la carpeta principal, ejecutar `npm run preparar` una vez y después `npm start`. La preparación instala las dependencias, crea la configuración local y carga los datos ficticios. El inicio ejecuta MongoDB, Express y Vite en una sola terminal. Los detalles, requisitos y cuentas se encuentran en [el README](../README.md#inicio-rápido).
 
-Para bases anteriores, consultar las migraciones de [personas](AUTENTICACION-PACIENTES.md) y [finanzas](caja-diaria.md) antes de arrancar el servidor. Los responsables anteriores que tengan campos vacíos se completan desde el formulario; los scripts solo completan sus propios registros ficticios conocidos.
+En instalaciones existentes se conserva `backend/.env`. Para bases anteriores, consultar las migraciones de [personas](AUTENTICACION-PACIENTES.md) y [finanzas](caja-diaria.md).
 
 ## Correspondencia con los requisitos
 
