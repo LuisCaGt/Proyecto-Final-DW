@@ -11,6 +11,7 @@ export async function tieneResponsable(paciente) {
   const links = await ResponsablePaciente.find({ paciente: paciente._id }).populate('responsable', '_id').lean();
   return links.some(link => link.responsable);
 }
+// Un paciente queda vinculado por asignación directa o por una cita con el profesional.
 export async function filtroPacientesProfesional(profesional) {
   const ids = await Cita.distinct('paciente', { profesional });
   return { $or: [{ profesionales: profesional }, { _id: { $in: ids } }] };

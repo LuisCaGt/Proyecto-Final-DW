@@ -15,6 +15,7 @@ export const useAuthStore = defineStore('auth', {
       this.token = token;
       this.user = user;
       this.checked = true;
+      // Solo se persiste el token; el usuario y sus permisos se recuperan desde la API al restaurar.
       sessionStorage.setItem(STORAGE_KEY, JSON.stringify({ token }));
     },
     clearSession() {
@@ -29,6 +30,7 @@ export const useAuthStore = defineStore('auth', {
       return data.user;
     },
     async restore() {
+      // Las navegaciones simultáneas comparten la misma consulta de sesión.
       if (restorePromise) return restorePromise;
       if (this.checked) return this.authenticated;
       restorePromise = (async () => {

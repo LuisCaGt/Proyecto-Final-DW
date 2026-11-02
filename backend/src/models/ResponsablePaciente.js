@@ -6,6 +6,7 @@ const responsablePacienteSchema = new mongoose.Schema({
   parentesco: { type: String, required: true, trim: true, maxlength: 80 },
 }, { timestamps: true, collection: 'responsablesPacientes' });
 
+// La pareja no se duplica, pero cada responsable puede estar asociado a varios pacientes.
 responsablePacienteSchema.index({ responsable: 1, paciente: 1 }, { unique: true });
 responsablePacienteSchema.index({ paciente: 1 });
 

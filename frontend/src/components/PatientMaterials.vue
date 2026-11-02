@@ -14,6 +14,7 @@ const loading = ref(true), busy = ref(false), error = ref(''), notice = ref('');
 // No se ofrecen materiales ya asignados a este paciente.
 const available = computed(() => catalog.value.filter(item => !assigned.value.some(a => a.material?._id === item._id)));
 
+// La lista de materiales asignados se conserva al cambiar de página del catálogo.
 async function loadCatalog(page = 1) {
   error.value = ''; selected.value = '';
   try {

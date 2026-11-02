@@ -80,8 +80,10 @@ export async function cerrar(req, res) {
       if (!caja) throw Object.assign(new Error('Caja no encontrada.'), { status: 404 });
       if (!acceso(req, caja)) throw Object.assign(new Error('Solo puedes cerrar tus propias cajas.'), { status: 403 });
       if (caja.estado !== 'ABIERTA') throw Object.assign(new Error('La caja ya está cerrada.'), { status: 409 });
+      // Totales y cierre comparten transacción con los cobros: un pago concurrente obliga a reintentar.
       const totales = await resumen(caja._id, session);
       const calculo = calcularCierreCaja({ montoInicialCentavos: caja.montoInicialCentavos, efectivoContadoCentavos: contado, totales });
+      // Se conserva el resultado del cierre para consultar después los valores de esa jornada.
       const cierre = { cerradoPor: req.user._id, cerradoEn: new Date(), efectivoContadoCentavos: contado,
         efectivoEsperadoCentavos: calculo.efectivoEsperadoCentavos, diferenciaCentavos: calculo.diferenciaCentavos,
         faltanteCentavos: calculo.faltanteCentavos, sobranteCentavos: calculo.sobranteCentavos,

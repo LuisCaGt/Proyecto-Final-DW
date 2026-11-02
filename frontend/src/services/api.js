@@ -14,9 +14,11 @@ export async function request(path, options = {}) {
   if (!response.ok) {
     if (response.status === 401 && path !== '/auth/login') {
       sessionStorage.removeItem('sigca.session');
+      // Avisa al resto de la interfaz para que descarte la sesión y solicite un nuevo acceso.
       window.dispatchEvent(new Event('sigca:session-expired'));
     }
     const error = new Error(data?.message || 'No se pudo completar la operación.');
+    // Los formularios usan estos errores para señalar el campo rechazado por el servidor.
     error.fields = data?.fields;
     error.status = response.status;
     throw error;

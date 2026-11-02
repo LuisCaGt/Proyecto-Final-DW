@@ -44,6 +44,7 @@ const router = createRouter({
   scrollBehavior: () => ({ top: 0 }),
 });
 
+// Este control guía la navegación. Cada operación privada vuelve a comprobar permisos en el backend.
 router.beforeEach(async to => {
   if (!to.meta.roles && !to.meta.guestOnly) return true;
   const auth = useAuthStore();

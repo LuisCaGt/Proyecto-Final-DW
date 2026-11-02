@@ -12,6 +12,7 @@ export function calcularTotalesCaja(movimientos) {
 }
 
 export function calcularCierreCaja({ montoInicialCentavos, efectivoContadoCentavos, totales }) {
+  // Transferencias y tarjetas cuentan como ingresos, pero no como efectivo que debe estar en la caja.
   const efectivoEsperadoCentavos = montoInicialCentavos + totales.totalEfectivoCentavos;
   const diferenciaCentavos = efectivoContadoCentavos - efectivoEsperadoCentavos;
   return { ...totales, efectivoEsperadoCentavos, diferenciaCentavos,

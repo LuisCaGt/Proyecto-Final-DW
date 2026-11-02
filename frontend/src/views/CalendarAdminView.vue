@@ -28,6 +28,7 @@ const dayCitas = computed(() => citas.value.filter(cita => cita.fecha === select
 // FullCalendar pide los eventos cada vez que cambia el mes visible; se consultan a la API REST.
 async function fetchEvents(info, success, failure) {
   loading.value = true; error.value = '';
+  // FullCalendar entrega un final exclusivo; la API recibe la última fecha incluida en el rango.
   const params = new URLSearchParams({ desde: info.startStr.slice(0, 10), hasta: addDays(info.endStr.slice(0, 10), -1) });
   for (const [key, value] of Object.entries(filters)) if (value) params.set(key, value);
   try {
@@ -51,6 +52,7 @@ const calendarOptions = {
   events: fetchEvents,
   selectable: true, unselectAuto: false, selectAllow: info => info.end - info.start === 86400000,
   select: info => { selectedDate.value = info.startStr; selected.value = null; },
+  // Seleccionar el día borra el detalle; por eso la cita elegida se asigna después de esa selección.
   eventClick: info => { const cita = info.event.extendedProps.cita; info.view.calendar.select(cita.fecha); selectedDate.value = cita.fecha; selected.value = cita; notice.value = ''; },
 };
 

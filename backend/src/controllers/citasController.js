@@ -10,6 +10,7 @@ import { cancelarCitaSiNoTienePagosValidos } from '../services/cancelacionCitaPa
 const isId = value => mongoose.isObjectIdOrHexString(value);
 const POPULATE = [POPULATE_PACIENTE, POPULATE_PROFESIONAL, { path: 'servicio', select: 'nombre estado' }];
 
+// El filtro se aplica en MongoDB para que el profesional no pueda pedir citas ajenas por su identificador.
 function scopeToUser(req, filter) {
   if (req.user.rol === 'PROFESIONAL') {
     if (filter.profesional && String(filter.profesional) !== String(req.user._id)) fail('No puedes consultar citas de otro profesional.', null, 403);
@@ -18,6 +19,7 @@ function scopeToUser(req, filter) {
   return filter;
 }
 
+// Los datos financieros se excluyen también de la respuesta, no solo de la pantalla.
 function visibleCita(req, cita) {
   if (req.user.rol !== 'PROFESIONAL') return cita;
   const { precioCentavos, ...basic } = cita;

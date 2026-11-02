@@ -10,6 +10,7 @@ export async function requireAuth(req, res, next) {
   try {
     const payload = verifyToken(token);
     if (!mongoose.isObjectIdOrHexString(payload.sub)) return res.status(401).json({ message: 'Token inválido.' });
+    // Se consulta el estado y rol actuales: desactivar una cuenta invalida también sus tokens anteriores.
     const user = await Usuario.findById(payload.sub).select('-passwordHash').lean();
     if (!user || user.estado !== 'ACTIVO') return res.status(401).json({ message: 'La sesión no es válida o el usuario está inactivo.' });
     req.user = user;

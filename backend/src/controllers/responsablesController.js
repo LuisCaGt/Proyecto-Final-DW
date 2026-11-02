@@ -45,6 +45,7 @@ export async function updateGuardian(req, res) {
   validateBody(req.body, true);
   const current = await Responsable.findById(req.params.id).lean();
   if (!current) return res.status(404).json({ message: 'Responsable no encontrado.' });
+  // Una edición parcial tampoco debe dejar incompleto un responsable creado con el formato anterior.
   validateBody(Object.fromEntries(keys.map(key => [key, req.body[key] ?? current[key]])));
   const data = req.body;
   const guardian = await Responsable.findByIdAndUpdate(req.params.id, { $set: data }, { returnDocument: 'after', runValidators: true });

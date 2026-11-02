@@ -30,12 +30,14 @@ export async function baseLocal(env) {
     const hello = await mongoose.connection.db.admin().command({ hello: 1 });
     if (!hello.setName) throw new Error('MongoDB debe usar replica set para pagos y caja.');
     await mongoose.disconnect();
+    // La base ya estaba ejecutándose: al salir no corresponde detener ese proceso.
     return async () => {};
   } catch (error) {
     const connected = mongoose.connection.readyState === 1;
     await mongoose.disconnect();
     if (connected) throw error;
   }
+  // Solo se inicia un servidor para una URI local; una conexión remota fallida debe corregirse.
   if (!uri.startsWith('mongodb://')) throw new Error('No se pudo conectar a MongoDB. Revisa la conexión configurada.');
   const url = new URL(uri);
   if (!['localhost', '127.0.0.1'].includes(url.hostname) || url.username || url.password || !url.searchParams.get('replicaSet')) throw new Error('No se pudo conectar a MongoDB. Revisa MONGODB_URI.');
@@ -49,5 +51,6 @@ export async function baseLocal(env) {
     instanceOpts: [{ port: Number(url.port || 27017), dbPath, ip: '127.0.0.1' }],
     replSet: { count: 1, name: url.searchParams.get('replicaSet'), storageEngine: 'wiredTiger', ip: '127.0.0.1' },
   });
+  // Se detiene el servidor propio conservando los archivos para el próximo arranque.
   return () => repl.stop({ doCleanup: false });
 }

@@ -126,6 +126,7 @@ export async function getPatient(req, res) {
   if (req.user.rol === 'PROFESIONAL') Object.assign(filter, { ...await filtroPacientesProfesional(req.user._id), estado: 'ACTIVO' });
   const patient = await Paciente.findOne(filter).lean();
   if (!patient) return res.status(404).json({ message: 'Paciente no encontrado.' });
+  // Se responde antes de cargar responsables, observaciones y pagos, que son información administrativa.
   if (req.user.rol === 'PROFESIONAL') return res.json(basicPatient(patient));
   const links = await ResponsablePaciente.find({ paciente: patient._id }).populate('responsable', 'identificador fotografia nombres apellidos telefono correo direccion').lean();
   res.json({
@@ -167,6 +168,7 @@ export async function associateGuardian(req, res) {
   const [patient, guardian] = await Promise.all([Paciente.findById(req.params.id), Responsable.findById(responsableId)]);
   if (!patient) return res.status(404).json({ message: 'Paciente no encontrado.' });
   if (!guardian) return res.status(404).json({ message: 'Responsable no encontrado.' });
+  // El parentesco pertenece a esta relación: una persona puede ser madre de un paciente y tutora de otro.
   const relation = await ResponsablePaciente.findOneAndUpdate(
     { paciente: patient._id, responsable: guardian._id },
     { $set: { parentesco: parentesco.trim() } },

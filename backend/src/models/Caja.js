@@ -24,6 +24,7 @@ const cajaSchema = new mongoose.Schema({
   versionMovimientos: { type: Number, default: 0 },
 }, { timestamps: true, collection: 'cajas' });
 
+// El índice impide dos aperturas simultáneas del mismo usuario sin limitar sus cajas ya cerradas.
 cajaSchema.index({ responsable: 1, estado: 1 }, { unique: true, partialFilterExpression: { estado: 'ABIERTA' }, name: 'una_caja_abierta_por_responsable' });
 cajaSchema.index({ seedKey: 1 }, { unique: true, partialFilterExpression: { seedKey: { $type: 'string' } } });
 export const Caja = mongoose.models.Caja || mongoose.model('Caja', cajaSchema);

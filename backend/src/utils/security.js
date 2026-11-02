@@ -20,6 +20,7 @@ function signature(input, secret) {
 }
 
 export async function hashPassword(password) {
+  // La sal cambia para cada cuenta, incluso si dos personas eligen la misma contraseña.
   const salt = randomBytes(16);
   const derived = await scrypt(password, salt, 64);
   return `scrypt$${salt.toString('base64url')}$${derived.toString('base64url')}`;
@@ -51,6 +52,7 @@ export function verifyToken(token, { secret, now = Date.now() } = {}) {
   const parts = token.split('.');
   if (parts.length !== 3) throw new Error('Token inválido.');
 
+  // Primero se verifica la firma; el contenido del token solo se acepta después de esta comprobación.
   const [headerPart, payloadPart, providedSignature] = parts;
   const expectedSignature = signature(`${headerPart}.${payloadPart}`, secret);
   const provided = Buffer.from(providedSignature, 'base64url');

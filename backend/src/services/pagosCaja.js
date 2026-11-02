@@ -18,6 +18,7 @@ export async function registrarPagoCaja({ citaId, usuarioId, metodo, montoCentav
       // Ambas escrituras serializan pagos contra cierre, cancelación y otros cobros.
       await Caja.updateOne({ _id: caja._id, estado: 'ABIERTA' }, { $inc: { versionMovimientos: 1 } }, { session });
       await Cita.updateOne({ _id: cita._id }, { $set: { updatedAt: new Date() } }, { session });
+      // Se recalcula después de escribir la cita para evitar que dos abonos simultáneos excedan su costo.
       const saldo = await saldoCita(cita, session);
       if (montoCentavos > saldo.saldoCentavos) fail('El monto supera el saldo pendiente de la cita.');
       const [pago] = await Pago.create([{ paciente: cita.paciente, cita: cita._id, caja: caja._id,
@@ -42,6 +43,7 @@ export async function anularPagoCaja({ pagoId, usuarioId, rol, motivo }) {
       if (pago.estado !== 'REGISTRADO') fail('El pago ya está anulado.');
       await Caja.updateOne({ _id: caja._id }, { $inc: { versionMovimientos: 1 } }, { session });
       await Cita.updateOne({ _id: pago.cita }, { $set: { updatedAt: new Date() } }, { session });
+      // La anulación conserva el pago original y registra quién la hizo, cuándo y por qué.
       return Pago.findOneAndUpdate({ _id: pago._id, estado: 'REGISTRADO' }, {
         $set: { estado: 'ANULADO', anuladoPor: usuarioId, anuladoEn: new Date(), motivoAnulacion: motivo.trim() },
       }, { session, returnDocument: 'after', runValidators: true });
