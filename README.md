@@ -4,6 +4,8 @@ Sistema para administrar un centro de atención psicológica y estimulación aud
 
 Está desarrollado con Vue 3, Vue Router, Pinia, Node.js, Express y MongoDB con Mongoose. El acceso utiliza JWT y permisos según el rol.
 
+[Repositorio en GitHub](https://github.com/LuisCaGt/Proyecto-Final-DW)
+
 ## Instalación
 
 Se necesita **Node.js 22.12 o posterior**, npm e Internet para la primera instalación.
